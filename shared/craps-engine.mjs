@@ -257,11 +257,13 @@ export function resolveRoll(state, dice) {
       });
     }
 
-    resolveTravelingComeBets(next, total, payouts, losses, pushes, removeIds, messages);
+    if (!sevenOut) resolveTravelingComeBets(next, total, payouts, losses, pushes, removeIds, messages);
   }
 
-  resolveOneRollBets(next, roll, payouts, losses, removeIds, messages);
-  if (!sevenOut) resolveNumberBets(next, roll, payouts, losses, removeIds, messages);
+  if (!sevenOut) {
+    resolveOneRollBets(next, roll, payouts, losses, removeIds, messages);
+    resolveNumberBets(next, roll, payouts, losses, removeIds, messages);
+  }
 
   next.bets = next.bets.filter((bet) => !removeIds.has(bet.id));
   const won = payouts.reduce((sum, item) => sum + item.returned + item.profit, 0);
@@ -416,8 +418,8 @@ function payBet(state, bet, ratio, payouts, removeIds, vig = 0) {
   const rawProfit = Math.floor((bet.amount * ratio[0]) / ratio[1]);
   const commission = vig ? Math.ceil(rawProfit * vig) : 0;
   const profit = Math.max(0, rawProfit - commission);
-  const staysWorking = ["place", "buy", "big", "hardways"].includes(bet.type);
-  const removed = !staysWorking || ["passLine", "dontPass", "come", "dontCome", "odds", "field", "proposition", "lay"].includes(bet.type);
+  const staysWorking = ["passLine", "field", "place", "buy", "big", "hardways"].includes(bet.type);
+  const removed = !staysWorking || ["dontPass", "come", "dontCome", "odds", "proposition", "lay"].includes(bet.type);
   payouts.push({ id: bet.id, label: betLabel(bet), amount: bet.amount, returned: removed ? bet.amount : 0, profit, commission });
   if (removed) removeIds.add(bet.id);
 }

@@ -5,7 +5,8 @@ function testPassLineComeOutWin() {
   let state = createInitialState("casino", 1000);
   state = placeBet(state, { type: "passLine", amount: 10 }).state;
   const result = resolveRoll(state, { die1: 3, die2: 4, total: 7, hard: false });
-  assert.equal(result.state.bankroll, 1010);
+  assert.equal(result.state.bankroll, 1000);
+  assert.equal(result.state.bets.find((bet) => bet.type === "passLine")?.amount, 10);
   assert.match(result.event.dealerCall, /Winner front line/);
 }
 
@@ -42,6 +43,23 @@ function testFieldLosesOnSix() {
   assert.equal(result.state.bankroll, 990);
 }
 
+function testFieldWinPaysProfitAndStaysWorking() {
+  let state = createInitialState("casino", 1000);
+  state = placeBet(state, { type: "field", amount: 10 }).state;
+  const result = resolveRoll(state, { die1: 5, die2: 4, total: 9, hard: false });
+  assert.equal(result.state.bankroll, 1000);
+  assert.equal(result.state.bets.find((bet) => bet.type === "field")?.amount, 10);
+}
+
+function testFieldSevenOutOnlyLosesOnce() {
+  let state = createInitialState("casino", 1000);
+  state = resolveRoll(state, { die1: 2, die2: 2, total: 4, hard: true }).state;
+  state = placeBet(state, { type: "field", amount: 10 }).state;
+  const result = resolveRoll(state, { die1: 4, die2: 3, total: 7, hard: false });
+  assert.equal(result.state.bankroll, 990);
+  assert.equal(result.event.losses.filter((loss) => loss.label === "Field").length, 1);
+}
+
 function testComeBetTravelsWithoutSameRollWin() {
   let state = createInitialState("casino", 1000);
   state = resolveRoll(state, { die1: 2, die2: 2, total: 4, hard: true }).state;
@@ -73,6 +91,8 @@ function testCraplessRejectsDontCome() {
   testPlaceSixPaysSevenToSixAndStaysWorking,
   testHardSixWinsNineToOne,
   testFieldLosesOnSix,
+  testFieldWinPaysProfitAndStaysWorking,
+  testFieldSevenOutOnlyLosesOnce,
   testComeBetTravelsWithoutSameRollWin,
   testCraplessTwoBecomesPoint,
   testCraplessRejectsDontCome

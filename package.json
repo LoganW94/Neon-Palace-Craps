@@ -1,0 +1,15 @@
+{
+  "name": "vegas-craps-simulator",
+  "version": "0.1.0",
+  "private": true,
+  "description": "Immersive Las Vegas-style craps simulator with a Node backend and multiplayer-ready architecture.",
+  "type": "module",
+  "scripts": {
+    "dev": "node backend/src/server.mjs",
+    "start": "NODE_ENV=production node backend/src/server.mjs",
+    "test": "node tests/craps-engine.test.mjs"
+  },
+  "engines": {
+    "node": ">=20"
+  }
+}

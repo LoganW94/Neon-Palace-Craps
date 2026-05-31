@@ -1,0 +1,26 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="1600" height="1000" viewBox="0 0 1600 1000">
+  <defs>
+    <filter id="noise">
+      <feTurbulence type="fractalNoise" baseFrequency=".75" numOctaves="4" stitchTiles="stitch"/>
+      <feColorMatrix type="saturate" values=".25"/>
+      <feBlend mode="multiply" in2="SourceGraphic"/>
+    </filter>
+    <radialGradient id="glow" cx="50%" cy="35%" r="65%">
+      <stop offset="0" stop-color="#128a68"/>
+      <stop offset=".48" stop-color="#07523f"/>
+      <stop offset="1" stop-color="#031f19"/>
+    </radialGradient>
+  </defs>
+  <rect width="1600" height="1000" fill="url(#glow)"/>
+  <g filter="url(#noise)" opacity=".42">
+    <rect width="1600" height="1000" fill="#0f6b52"/>
+  </g>
+  <g fill="none" stroke="#f6ca63" stroke-width="10" opacity=".55">
+    <path d="M195 770 C 305 510, 1240 500, 1398 760"/>
+    <path d="M260 320 C 430 150, 1130 145, 1335 330"/>
+  </g>
+  <g font-family="Arial Black, Arial" font-size="96" fill="#f8f1df" opacity=".18" text-anchor="middle">
+    <text x="800" y="510">PASS LINE</text>
+    <text x="800" y="650">COME</text>
+  </g>
+</svg>

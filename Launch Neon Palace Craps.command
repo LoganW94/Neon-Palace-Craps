@@ -16,11 +16,21 @@ echo "Press Control-C to stop the app."
 echo
 
 if ! command -v node >/dev/null 2>&1; then
-  echo "Node.js is required but was not found."
-  echo "Install Node.js from https://nodejs.org, then launch again."
-  echo
-  read "unused?Press Return to close this window."
-  exit 1
+  if [ -x "/Applications/Codex.app/Contents/Resources/node" ]; then
+    NODE_BIN="/Applications/Codex.app/Contents/Resources/node"
+  elif [ -x "/opt/homebrew/bin/node" ]; then
+    NODE_BIN="/opt/homebrew/bin/node"
+  elif [ -x "/usr/local/bin/node" ]; then
+    NODE_BIN="/usr/local/bin/node"
+  else
+    echo "Node.js is required but was not found."
+    echo "Install Node.js from https://nodejs.org, then launch again."
+    echo
+    read "unused?Press Return to close this window."
+    exit 1
+  fi
+else
+  NODE_BIN="$(command -v node)"
 fi
 
 if curl -fsS "${URL}/api/health" >/dev/null 2>&1; then
@@ -30,7 +40,7 @@ if curl -fsS "${URL}/api/health" >/dev/null 2>&1; then
 fi
 
 : > "${LOG_FILE}"
-HOST="${HOST}" PORT="${PORT}" node backend/src/server.mjs >> "${LOG_FILE}" 2>&1 &
+HOST="${HOST}" PORT="${PORT}" "${NODE_BIN}" backend/src/server.mjs >> "${LOG_FILE}" 2>&1 &
 SERVER_PID=$!
 
 trap 'kill "${SERVER_PID}" >/dev/null 2>&1 || true' INT TERM EXIT

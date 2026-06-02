@@ -24,6 +24,8 @@ Keep the terminal window open while playing. Press `Control-C` in that window to
 
 If Chrome says `This site can't be reached` or `ERR_CONNECTION_REFUSED`, the server did not finish starting. Launch again with the updated command file and watch the terminal window for any message about Node.js, port `4173`, or `.neon-palace-server.log`.
 
+If the launcher says `Node.js is required but was not found`, install Node from [nodejs.org](https://nodejs.org) or run the app from Codex. The macOS launcher also checks common Node locations, including the Codex app's bundled Node runtime.
+
 ### Terminal
 
 ```bash

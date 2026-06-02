@@ -225,7 +225,7 @@ main { min-height: calc(100vh - 76px); }
   100% { transform: rotateX(720deg) rotateY(540deg) translateY(0); }
 }
 .chip-rack { display: grid; grid-template-columns: repeat(3, 1fr); gap: 10px; margin: 18px 0; }
-.quick-bets { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; margin-top: 10px; }
+.quick-bets { display: grid; grid-template-columns: repeat(auto-fit, minmax(96px, 1fr)); gap: 8px; margin-top: 10px; }
 .quick-bets button {
   border: 1px solid var(--line);
   border-radius: 8px;
@@ -596,7 +596,7 @@ select {
   box-shadow: 0 14px 34px rgba(0,0,0,.42);
 }
 
-@media (max-width: 1320px) {
+@media (max-width: 1120px) {
   .table-screen {
     grid-template-columns: minmax(230px, .72fr) minmax(560px, 1.28fr);
     grid-template-areas:

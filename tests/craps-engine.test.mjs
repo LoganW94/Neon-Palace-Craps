@@ -93,6 +93,42 @@ function testPullNumberBetsReturnsOnlyRemovableNumberChips() {
   assert.equal(result.state.bets[0].type, "come");
 }
 
+function testPassOddsPayTrueOddsOnPointMade() {
+  let state = createInitialState("casino", 1000);
+  state = placeBet(state, { type: "passLine", amount: 10 }).state;
+  state = resolveRoll(state, { die1: 2, die2: 2, total: 4, hard: true }).state;
+  state = placeBet(state, { type: "odds", parentType: "passLine", number: 4, amount: 10 }).state;
+  const result = resolveRoll(state, { die1: 3, die2: 1, total: 4, hard: false });
+  assert.equal(result.state.bankroll, 1020);
+  assert.equal(result.event.payouts.find((payout) => payout.label === "Odds 4")?.profit, 20);
+}
+
+function testDontPassOddsPayOnSevenOut() {
+  let state = createInitialState("casino", 1000);
+  state = placeBet(state, { type: "dontPass", amount: 10 }).state;
+  state = resolveRoll(state, { die1: 2, die2: 2, total: 4, hard: true }).state;
+  state = placeBet(state, { type: "odds", parentType: "dontPass", number: 4, amount: 20 }).state;
+  const result = resolveRoll(state, { die1: 4, die2: 3, total: 7, hard: false });
+  assert.equal(result.state.bankroll, 1020);
+  assert.equal(result.event.payouts.find((payout) => payout.label === "Odds 4")?.profit, 10);
+}
+
+function testDontPassOddsLoseWhenPointMade() {
+  let state = createInitialState("casino", 1000);
+  state = placeBet(state, { type: "dontPass", amount: 10 }).state;
+  state = resolveRoll(state, { die1: 2, die2: 2, total: 4, hard: true }).state;
+  state = placeBet(state, { type: "odds", parentType: "dontPass", number: 4, amount: 20 }).state;
+  const result = resolveRoll(state, { die1: 3, die2: 1, total: 4, hard: false });
+  assert.equal(result.state.bankroll, 970);
+  assert.equal(result.event.losses.filter((loss) => loss.label === "Odds 4").length, 1);
+}
+
+function testOddsRejectWithoutFlatPointBet() {
+  const state = createInitialState("casino", 1000);
+  const result = placeBet(state, { type: "odds", parentType: "passLine", amount: 10 });
+  assert.equal(result.event.type, "rejected");
+}
+
 function testComeBetTravelsWithoutSameRollWin() {
   let state = createInitialState("casino", 1000);
   state = resolveRoll(state, { die1: 2, die2: 2, total: 4, hard: true }).state;
@@ -129,6 +165,10 @@ function testCraplessRejectsDontCome() {
   testNumberBetsDoNotWorkOnComeOut,
   testClearBetsKeepsContractBetsOnly,
   testPullNumberBetsReturnsOnlyRemovableNumberChips,
+  testPassOddsPayTrueOddsOnPointMade,
+  testDontPassOddsPayOnSevenOut,
+  testDontPassOddsLoseWhenPointMade,
+  testOddsRejectWithoutFlatPointBet,
   testComeBetTravelsWithoutSameRollWin,
   testCraplessTwoBecomesPoint,
   testCraplessRejectsDontCome

@@ -85,7 +85,8 @@ document.addEventListener("click", (event) => {
     const key = target.dataset.specialBet;
     const point = snapshot.game.point;
     const bet = {
-      odds: { type: "odds", number: point ?? 6, parentType: "passLine" },
+      passOdds: { type: "odds", number: point, parentType: "passLine" },
+      dontPassOdds: { type: "odds", number: point, parentType: "dontPass" },
       buy6: { type: "buy", number: 6 },
       lay10: { type: "lay", number: 10 },
       dontCome: { type: "dontCome" }
@@ -218,7 +219,8 @@ function crapsTable() {
         <button class="secondary clear-button" data-clear-bets>Clear Removable Bets</button>
         <button class="secondary ambience-button ${ui.music ? "active" : ""}" data-table-music>${ui.music ? "Ambience On" : "Start Ambience"}</button>
         <div class="quick-bets">
-          <button data-special-bet="odds">Take Odds</button>
+          <button data-special-bet="passOdds">Pass Odds</button>
+          <button data-special-bet="dontPassOdds" ${game.table.crapless ? "disabled" : ""}>Don't Odds</button>
           <button data-special-bet="dontCome" ${game.table.crapless ? "disabled" : ""}>Don't Come</button>
         </div>
       </aside>

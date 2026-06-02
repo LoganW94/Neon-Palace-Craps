@@ -132,6 +132,10 @@ export function rollDice(rng = Math.random) {
 export function placeBet(state, bet) {
   const catalog = BET_CATALOG[bet.type] ?? BET_CATALOG.proposition;
   const amount = clampToTable(Number(bet.amount), state.table.min, catalog.max);
+  if (bet.type === "odds") {
+    const oddsCheck = validateOddsBet(state, bet);
+    if (!oddsCheck.ok) return { state, event: { type: "rejected", message: oddsCheck.message } };
+  }
   if (state.table.crapless && ["dontPass", "dontCome"].includes(bet.type)) {
     return { state, event: { type: "rejected", message: "Don't bets are not offered on this Crapless Craps table." } };
   }
@@ -254,7 +258,7 @@ export function resolveRoll(state, dice) {
       settleByType(next, "passLine", 1, payouts, removeIds);
       settleByType(next, "dontPass", -1, losses, removeIds);
       settleOddsBehind(next, "passLine", next.point, payouts, removeIds);
-      settleOddsBehind(next, "dontPass", next.point, losses, removeIds, true);
+      loseOddsBehind(next, "dontPass", next.point, losses, removeIds);
       next.point = null;
       next.puck = "OFF";
       madePoint = true;
@@ -269,10 +273,10 @@ export function resolveRoll(state, dice) {
       next.shooterIndex = (next.shooterIndex + 1) % next.shooters.length;
       messages.push(`Seven out. Dice move to ${next.shooters[next.shooterIndex]}.`);
       next.bets.forEach((bet) => {
-        const winsOnSeven = ["dontPass", "dontCome", "lay"].includes(bet.type);
+        const winsOnSeven = ["dontPass", "dontCome", "lay"].includes(bet.type) || (bet.type === "odds" && ["dontPass", "dontCome"].includes(bet.parentType));
         if (winsOnSeven) {
           const target = bet.number || state.point;
-          const ratio = bet.type === "lay" ? LAY_ODDS[target] : [1, 1];
+          const ratio = bet.type === "lay" || bet.type === "odds" ? LAY_ODDS[target] : [1, 1];
           payBet(next, bet, ratio, payouts, removeIds, bet.type === "lay" ? 0.05 : 0);
         } else {
           loseBet(bet, losses, removeIds);
@@ -336,6 +340,7 @@ function resolveTravelingComeBets(state, total, payouts, losses, pushes, removeI
       settleOddsBehind(state, "dontCome", bet.number, payouts, removeIds, true);
     }
     if (bet.number === total && bet.type === "dontCome") loseBet(bet, losses, removeIds);
+    if (bet.number === total && bet.type === "dontCome") loseOddsBehind(state, "dontCome", total, losses, removeIds);
   });
 
   if (state.table.crapless) {
@@ -433,6 +438,12 @@ function settleOddsBehind(state, parentType, point, payouts, removeIds, lay = fa
     .forEach((bet) => payBet(state, bet, lay ? LAY_ODDS[point] : TRUE_ODDS[point], payouts, removeIds));
 }
 
+function loseOddsBehind(state, parentType, point, losses, removeIds) {
+  state.bets
+    .filter((bet) => bet.type === "odds" && bet.parentType === parentType && bet.number === point)
+    .forEach((bet) => loseBet(bet, losses, removeIds));
+}
+
 function pushByType(state, type, pushes, removeIds) {
   state.bets.filter((bet) => bet.type === type && !bet.number).forEach((bet) => pushBet(bet, pushes, removeIds));
 }
@@ -474,6 +485,20 @@ function buildDealerCall(roll, messages, profit, lost) {
 
 function chipCall(amount, label, number) {
   return `$${amount} ${label}${number ? ` on ${number}` : ""}.`;
+}
+
+function validateOddsBet(state, bet) {
+  const parentType = bet.parentType;
+  const number = bet.number ?? state.point;
+  if (!parentType || !number) return { ok: false, message: "Odds need an established point." };
+  if (!["passLine", "dontPass", "come", "dontCome"].includes(parentType)) return { ok: false, message: "Odds need a line or come bet." };
+  const hasFlatBet = state.bets.some((flatBet) => {
+    if (flatBet.type !== parentType) return false;
+    if (["passLine", "dontPass"].includes(parentType)) return Boolean(state.point);
+    return Number(flatBet.number) === Number(number);
+  });
+  if (!hasFlatBet) return { ok: false, message: `Place the ${BET_CATALOG[parentType]?.label ?? parentType} bet before taking odds.` };
+  return { ok: true };
 }
 
 export function betLabel(bet) {

@@ -162,11 +162,33 @@ export function placeBet(state, bet) {
 
 export function clearWorkingBets(state) {
   const next = clone(state);
-  const removable = next.bets.filter((bet) => !bet.contract && bet.type !== "odds");
+  const removable = next.bets.filter((bet) => !bet.contract);
   next.bankroll += removable.reduce((sum, bet) => sum + bet.amount, 0);
-  next.bets = next.bets.filter((bet) => bet.contract || bet.type === "odds");
+  next.bets = next.bets.filter((bet) => bet.contract);
   next.dealer.lastCall = "Non-contract bets are off the layout.";
+  next.ledger.unshift({ kind: "clear", amount: removable.reduce((sum, bet) => sum + bet.amount, 0), label: next.dealer.lastCall, at: Date.now() });
   return next;
+}
+
+export function pullNumberBets(state, number) {
+  const next = clone(state);
+  const pullableTypes = ["place", "buy", "lay", "big", "odds"];
+  const pulled = next.bets.filter((bet) => pullableTypes.includes(bet.type) && Number(bet.number) === Number(number));
+  if (!pulled.length) {
+    next.dealer.lastCall = `No removable chips on ${number}.`;
+    return { state: next, event: { type: "noAction", message: next.dealer.lastCall } };
+  }
+  const returned = pulled.reduce((sum, bet) => sum + bet.amount, 0);
+  const pulledIds = new Set(pulled.map((bet) => bet.id));
+  next.bets = next.bets.filter((bet) => !pulledIds.has(bet.id));
+  next.bankroll += returned;
+  next.dealer.lastCall = `Pulled down $${returned} from ${number}.`;
+  next.ledger.unshift({ kind: "pull", amount: returned, label: next.dealer.lastCall, at: Date.now() });
+  return { state: next, event: { type: "pulled", message: next.dealer.lastCall, returned } };
+}
+
+export function pressNumberBet(state, number, amount) {
+  return placeBet(state, { type: "place", number, amount });
 }
 
 export function resolveRoll(state, dice) {
@@ -174,6 +196,7 @@ export function resolveRoll(state, dice) {
   const roll = dice ?? rollDice();
   const total = roll.total;
   const pointNumbers = getPointNumbers(next);
+  const wasPointOn = Boolean(state.point);
   const messages = [];
   const payouts = [];
   const losses = [];
@@ -262,7 +285,7 @@ export function resolveRoll(state, dice) {
 
   if (!sevenOut) {
     resolveOneRollBets(next, roll, payouts, losses, removeIds, messages);
-    resolveNumberBets(next, roll, payouts, losses, removeIds, messages);
+    if (wasPointOn) resolveNumberBets(next, roll, payouts, losses, removeIds, messages);
   }
 
   next.bets = next.bets.filter((bet) => !removeIds.has(bet.id));

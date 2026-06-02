@@ -40,8 +40,20 @@ function render() {
 }
 
 document.addEventListener("click", (event) => {
-  const target = event.target.closest("button, article[data-new-game], article[data-step]");
+  const target = event.target.closest("button, article[data-new-game], article[data-step], [data-bet-type]");
   if (!target) return;
+  if (target.dataset.numberAction) {
+    const action = target.dataset.numberAction;
+    const number = Number(target.dataset.number);
+    const actionEvent = action === "press"
+      ? store.pressNumber(number)
+      : action === "pull"
+        ? store.pullNumber(number)
+        : store.bet({ type: action, number });
+    if (actionEvent.type === "betPlaced" || actionEvent.type === "pulled") sound.chips();
+    announce(actionEvent.message);
+    return;
+  }
   if (target.dataset.page) store.setUi({ page: target.dataset.page });
   if (target.dataset.newGame) {
     const bankroll = Number(prompt("Starting bankroll", MODES[target.dataset.newGame]?.bankroll ?? 2000)) || undefined;
@@ -63,6 +75,11 @@ document.addEventListener("click", (event) => {
   if (target.hasAttribute("data-auto-bet")) {
     store.autoBet();
     sound.chips();
+  }
+  if (target.hasAttribute("data-clear-bets")) {
+    const clearEvent = store.clearBets();
+    sound.chips();
+    announce(clearEvent.message);
   }
   if (target.dataset.specialBet) {
     const key = target.dataset.specialBet;
@@ -113,13 +130,9 @@ function rollWithAnimation() {
 
 function nav() {
   const items = [
-    ["home", "Home"],
-    ["tables", "Tables"],
     ["table", "Craps Table"],
     ["stats", "Stats"],
-    ["tutorial", "Help"],
-    ["lobby", "Lobby"],
-    ["settings", "Settings"]
+    ["tutorial", "Help"]
   ];
   return `
     <header class="topbar">
@@ -144,7 +157,6 @@ function home() {
         <div class="hero-actions">
           <button class="primary" data-new-game="casino">Play Casino Table</button>
           <button class="secondary" data-page="tutorial">Beginner Tutorial</button>
-          <button class="secondary" data-page="tables">Choose Table</button>
         </div>
       </div>
     </section>
@@ -203,12 +215,11 @@ function crapsTable() {
           </select>
         </label>
         <button class="secondary" data-auto-bet>Run Strategy</button>
+        <button class="secondary clear-button" data-clear-bets>Clear Removable Bets</button>
         <button class="secondary ambience-button ${ui.music ? "active" : ""}" data-table-music>${ui.music ? "Ambience On" : "Start Ambience"}</button>
         <div class="quick-bets">
           <button data-special-bet="odds">Take Odds</button>
-          <button data-special-bet="buy6">Buy 6</button>
-          <button data-special-bet="lay10">Lay 10</button>
-          <button data-special-bet="dontCome">Don't Come</button>
+          <button data-special-bet="dontCome" ${game.table.crapless ? "disabled" : ""}>Don't Come</button>
         </div>
       </aside>
       <div class="felt-wrap">
@@ -270,17 +281,32 @@ function betZone(type, number, label, title) {
     ? snapshot.game.bets.filter((bet) => ["place", "buy", "lay", "come", "dontCome", "odds"].includes(bet.type) && `${bet.number ?? ""}` === `${number}`)
     : snapshot.game.bets.filter((bet) => bet.type === type && `${bet.number ?? ""}` === `${number ?? ""}`);
   const isPoint = isNumberBox && snapshot.game.point === number;
+  const chips = chipBreakdown(bets.reduce((sum, bet) => sum + bet.amount, 0));
+  const codes = [...new Set(bets.map(chipCode).filter(Boolean))].join(" ");
   return `
-    <button class="bet-zone ${type} ${isPoint ? "point-active" : ""}" data-bet-type="${type}" data-bet-number="${number ?? ""}" title="${title}">
+    <div class="bet-zone ${type} ${isPoint ? "point-active" : ""}" data-bet-type="${type}" data-bet-number="${number ?? ""}" title="${title}" role="button" tabindex="0">
       ${isPoint ? `<em class="point-marker">ON</em>` : ""}
       <span>${label}</span>
-      <div class="stack">${bets.slice(0, 6).map((bet, index) => `<i class="bet-chip ${bet.type}" style="--stack:${index}"><small>${chipCode(bet)}</small>${bet.amount}</i>`).join("")}</div>
-    </button>
+      ${isNumberBox ? `<div class="number-controls"><button data-number-action="press" data-number="${number}">Press</button><button data-number-action="pull" data-number="${number}">Pull</button><button data-number-action="buy" data-number="${number}">Buy</button><button data-number-action="lay" data-number="${number}">Lay</button></div>` : ""}
+      <div class="stack">${chips.map((chip, index) => `<i class="bet-chip chipv-${chip}" style="--stack:${index}">${chip}</i>`).join("")}${codes ? `<b>${codes}</b>` : ""}</div>
+    </div>
   `;
 }
 
 function chipCode(bet) {
   return { come: "C", dontCome: "DC", odds: "O", buy: "B", lay: "L", place: "P", big: "BIG" }[bet.type] ?? "";
+}
+
+function chipBreakdown(total) {
+  const chips = [];
+  let remaining = total;
+  [1000, 500, 100, 25, 10, 5].forEach((value) => {
+    while (remaining >= value) {
+      chips.push(value);
+      remaining -= value;
+    }
+  });
+  return chips.slice(0, 7);
 }
 
 function dice(value) {

@@ -1,5 +1,5 @@
 import assert from "node:assert/strict";
-import { createInitialState, placeBet, resolveRoll } from "../shared/craps-engine.mjs";
+import { clearWorkingBets, createInitialState, placeBet, pullNumberBets, resolveRoll } from "../shared/craps-engine.mjs";
 
 function testPassLineComeOutWin() {
   let state = createInitialState("casino", 1000);
@@ -23,6 +23,7 @@ function testPointAndSevenOutRotation() {
 
 function testPlaceSixPaysSevenToSixAndStaysWorking() {
   let state = createInitialState("casino", 1000);
+  state = resolveRoll(state, { die1: 2, die2: 2, total: 4, hard: true }).state;
   state = placeBet(state, { type: "place", number: 6, amount: 60 }).state;
   const result = resolveRoll(state, { die1: 3, die2: 3, total: 6, hard: true });
   assert.equal(result.state.bankroll, 1010);
@@ -31,6 +32,7 @@ function testPlaceSixPaysSevenToSixAndStaysWorking() {
 
 function testHardSixWinsNineToOne() {
   let state = createInitialState("casino", 1000);
+  state = resolveRoll(state, { die1: 2, die2: 2, total: 4, hard: true }).state;
   state = placeBet(state, { type: "hardways", number: "hard6", amount: 10 }).state;
   const result = resolveRoll(state, { die1: 3, die2: 3, total: 6, hard: true });
   assert.equal(result.state.bankroll, 1080);
@@ -58,6 +60,37 @@ function testFieldSevenOutOnlyLosesOnce() {
   const result = resolveRoll(state, { die1: 4, die2: 3, total: 7, hard: false });
   assert.equal(result.state.bankroll, 990);
   assert.equal(result.event.losses.filter((loss) => loss.label === "Field").length, 1);
+}
+
+function testNumberBetsDoNotWorkOnComeOut() {
+  let state = createInitialState("casino", 1000);
+  state = placeBet(state, { type: "place", number: 4, amount: 10 }).state;
+  let result = resolveRoll(state, { die1: 2, die2: 2, total: 4, hard: true });
+  assert.equal(result.state.point, 4);
+  assert.equal(result.state.bankroll, 990);
+  assert.equal(result.event.payouts.length, 0);
+  result = resolveRoll(result.state, { die1: 3, die2: 1, total: 4, hard: false });
+  assert.equal(result.state.bankroll, 1008);
+}
+
+function testClearBetsKeepsContractBetsOnly() {
+  let state = createInitialState("casino", 1000);
+  state = placeBet(state, { type: "passLine", amount: 10 }).state;
+  state = placeBet(state, { type: "field", amount: 10 }).state;
+  const cleared = clearWorkingBets(state);
+  assert.equal(cleared.bankroll, 990);
+  assert.equal(cleared.bets.length, 1);
+  assert.equal(cleared.bets[0].type, "passLine");
+}
+
+function testPullNumberBetsReturnsOnlyRemovableNumberChips() {
+  let state = createInitialState("casino", 1000);
+  state = placeBet(state, { type: "place", number: 6, amount: 25 }).state;
+  state = placeBet(state, { type: "come", number: 6, amount: 25 }).state;
+  const result = pullNumberBets(state, 6);
+  assert.equal(result.state.bankroll, 975);
+  assert.equal(result.state.bets.length, 1);
+  assert.equal(result.state.bets[0].type, "come");
 }
 
 function testComeBetTravelsWithoutSameRollWin() {
@@ -93,6 +126,9 @@ function testCraplessRejectsDontCome() {
   testFieldLosesOnSix,
   testFieldWinPaysProfitAndStaysWorking,
   testFieldSevenOutOnlyLosesOnce,
+  testNumberBetsDoNotWorkOnComeOut,
+  testClearBetsKeepsContractBetsOnly,
+  testPullNumberBetsReturnsOnlyRemovableNumberChips,
   testComeBetTravelsWithoutSameRollWin,
   testCraplessTwoBecomesPoint,
   testCraplessRejectsDontCome

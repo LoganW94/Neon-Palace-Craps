@@ -30,6 +30,8 @@ node tests/craps-engine.test.mjs
 - Crapless Craps mode where 2, 3, 11, and 12 establish points instead of crapping out
 - Dealer callouts, dice animation, chip stacks, generated casino sounds
 - Number-box point marker plus traveled Come bet chips
+- Bets-off behavior for number bets on come-out rolls
+- Clear removable bets plus per-number Press, Pull, Buy, and Lay controls
 - AI player personalities and strategy assistant
 - Future lobby, profiles, chat, spectator, matchmaking, and persistence contracts
 

@@ -1,4 +1,4 @@
-import { createInitialState, placeBet, resolveRoll, rollDice, strategyRecommendation } from "../../../shared/craps-engine.mjs";
+import { clearWorkingBets, createInitialState, placeBet, pressNumberBet, pullNumberBets, resolveRoll, rollDice, strategyRecommendation } from "../../../shared/craps-engine.mjs";
 
 export class Store {
   constructor() {
@@ -45,6 +45,29 @@ export class Store {
 
   bet(bet) {
     const result = placeBet(this.game, { ...bet, amount: this.ui.selectedChip });
+    this.game = result.state;
+    this.ui = { ...this.ui, lastEvent: result.event };
+    this.emit();
+    return result.event;
+  }
+
+  clearBets() {
+    this.game = clearWorkingBets(this.game);
+    this.ui = { ...this.ui, lastEvent: { type: "cleared", message: this.game.dealer.lastCall } };
+    this.emit();
+    return this.ui.lastEvent;
+  }
+
+  pressNumber(number) {
+    const result = pressNumberBet(this.game, number, this.ui.selectedChip);
+    this.game = result.state;
+    this.ui = { ...this.ui, lastEvent: result.event };
+    this.emit();
+    return result.event;
+  }
+
+  pullNumber(number) {
+    const result = pullNumberBets(this.game, number);
     this.game = result.state;
     this.ui = { ...this.ui, lastEvent: result.event };
     this.emit();

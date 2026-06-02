@@ -195,6 +195,7 @@ function tableSelection() {
 function crapsTable() {
   const { game, ui, advice } = snapshot;
   const pass = game.bets.filter((bet) => bet.owner === "player");
+  const currentBetTotal = game.bets.reduce((sum, bet) => sum + bet.amount, 0);
   return `
     <section class="table-screen">
       <aside class="left-rail panel">
@@ -254,6 +255,7 @@ function crapsTable() {
       </div>
       <aside class="right-rail panel">
         <div class="meter"><span>Profit / Loss</span><strong class="${game.bankroll - game.buyIn >= 0 ? "good" : "bad"}">${money(game.bankroll - game.buyIn)}</strong></div>
+        <div class="meter"><span>Current Bets</span><strong>${money(currentBetTotal)}</strong></div>
         <div class="meter"><span>Rolls</span><strong>${game.session.rolls}</strong></div>
         <div class="meter"><span>Hot / Cold</span><strong>${game.session.hotRoll} / ${game.session.coldRoll}</strong></div>
         <div class="assistant-box">

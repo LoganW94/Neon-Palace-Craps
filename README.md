@@ -22,6 +22,8 @@ http://127.0.0.1:4173
 
 Keep the terminal window open while playing. Press `Control-C` in that window to stop the app.
 
+If Chrome says `This site can't be reached` or `ERR_CONNECTION_REFUSED`, the server did not finish starting. Launch again with the updated command file and watch the terminal window for any message about Node.js, port `4173`, or `.neon-palace-server.log`.
+
 ### Terminal
 
 ```bash

@@ -236,7 +236,7 @@ function crapsTable() {
           <div class="layout-row come">
             ${betZone("come", "", "COME", "Come")}
             ${game.table.crapless ? `<button class="bet-zone disabled" title="No don't come on Crapless Craps"><span>CRAPLESS TABLE</span></button>` : betZone("dontCome", "", "DON'T COME", "Don't Come")}
-            ${betZone("field", "", "FIELD 2 3 4 9 10 11 12", "Field")}
+            ${fieldZone()}
           </div>
           <div class="layout-row action">
             ${["hard4", "hard6", "hard8", "hard10"].map((key) => betZone("hardways", key, key.replace("hard", "HARD "), "Hardway")).join("")}
@@ -289,6 +289,27 @@ function betZone(type, number, label, title) {
       <span>${label}</span>
       ${isNumberBox ? `<div class="number-controls"><button data-number-action="press" data-number="${number}">Press</button><button data-number-action="pull" data-number="${number}">Pull</button><button data-number-action="buy" data-number="${number}">Buy</button><button data-number-action="lay" data-number="${number}">Lay</button></div>` : ""}
       <div class="stack">${chips.map((chip, index) => `<i class="bet-chip chipv-${chip}" style="--stack:${index}">${chip}</i>`).join("")}${codes ? `<b>${codes}</b>` : ""}</div>
+    </div>
+  `;
+}
+
+function fieldZone() {
+  const bets = snapshot.game.bets.filter((bet) => bet.type === "field");
+  const chips = chipBreakdown(bets.reduce((sum, bet) => sum + bet.amount, 0));
+  return `
+    <div class="bet-zone field field-real" data-bet-type="field" data-bet-number="" title="Field" role="button" tabindex="0">
+      <span class="field-title">FIELD</span>
+      <div class="field-track">
+        <strong>2</strong>
+        <span>3</span>
+        <span>4</span>
+        <span>9</span>
+        <span>10</span>
+        <span>11</span>
+        <strong>12</strong>
+      </div>
+      <div class="field-note"><b>2 & 12 pay double</b><em>One roll</em></div>
+      <div class="stack">${chips.map((chip, index) => `<i class="bet-chip chipv-${chip}" style="--stack:${index}">${chip}</i>`).join("")}</div>
     </div>
   `;
 }

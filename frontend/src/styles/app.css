@@ -175,10 +175,16 @@ main { min-height: calc(100vh - 76px); }
 
 .table-screen {
   display: grid;
-  grid-template-columns: 270px minmax(560px, 1fr) 310px;
+  grid-template-columns: clamp(220px, 21vw, 270px) minmax(560px, 1fr) clamp(250px, 24vw, 310px);
+  grid-template-areas: "left table right";
   gap: 16px;
-  padding: 16px;
+  width: min(100%, 1680px);
+  margin: 0 auto;
+  padding: clamp(10px, 1.3vw, 18px);
 }
+.left-rail { grid-area: left; }
+.felt-wrap { grid-area: table; }
+.right-rail { grid-area: right; }
 .panel { padding: 16px; align-self: start; }
 .dealer { display: flex; gap: 12px; align-items: center; }
 .dealer-avatar {
@@ -261,7 +267,8 @@ select {
 
 .felt-wrap {
   position: relative;
-  min-height: 620px;
+  min-height: clamp(520px, 58vw, 720px);
+  min-width: 0;
 }
 .table-glow {
   position: absolute;
@@ -271,9 +278,9 @@ select {
 }
 .craps-felt {
   position: relative;
-  min-height: 620px;
-  padding: 54px 26px 26px;
-  border: 18px solid #5f2f1f;
+  min-height: clamp(520px, 58vw, 720px);
+  padding: clamp(44px, 4vw, 62px) clamp(16px, 2.1vw, 30px) clamp(20px, 2vw, 30px);
+  border: clamp(12px, 1.4vw, 18px) solid #5f2f1f;
   border-radius: 12% / 8%;
   background:
     linear-gradient(rgba(255,255,255,.035) 1px, transparent 1px),
@@ -304,13 +311,13 @@ select {
 .points { grid-template-columns: repeat(6, 1fr); }
 .points.crapless-points { grid-template-columns: repeat(5, 1fr); }
 .lines { grid-template-columns: 2fr 1fr; }
-.come { grid-template-columns: 1.3fr 1.1fr 2fr; }
+.come { grid-template-columns: minmax(120px, 1.05fr) minmax(120px, .95fr) minmax(260px, 2.15fr); }
 .action { grid-template-columns: repeat(auto-fit, minmax(78px, 1fr)); }
 .bet-zone {
   position: relative;
   display: grid;
   place-items: center;
-  min-height: 92px;
+  min-height: clamp(78px, 8.4vw, 98px);
   border: 2px solid rgba(255,255,255,.42);
   border-radius: 8px;
   color: #fdf8e8;
@@ -386,6 +393,55 @@ select {
   box-shadow: 0 8px 18px rgba(0,0,0,.42);
 }
 .field { background: rgba(246, 202, 99, 0.1); }
+.field-real {
+  align-content: center;
+  gap: 6px;
+  padding: 8px 74px 8px 12px;
+  background:
+    linear-gradient(90deg, rgba(246, 202, 99, .16), rgba(246, 202, 99, .055)),
+    rgba(255,255,255,.035);
+}
+.field-title {
+  font-size: clamp(.9rem, 1.4vw, 1.25rem);
+  color: #fff5ca;
+  text-shadow: 0 0 12px rgba(246, 202, 99, .25);
+}
+.field-track {
+  position: relative;
+  z-index: 1;
+  display: grid;
+  grid-template-columns: repeat(7, minmax(26px, 1fr));
+  align-items: center;
+  gap: 5px;
+  width: 100%;
+}
+.field-track span,
+.field-track strong {
+  display: grid;
+  place-items: center;
+  min-height: 30px;
+  border: 1px solid rgba(255,255,255,.3);
+  border-radius: 6px;
+  background: rgba(0,0,0,.16);
+  font-size: clamp(.78rem, 1.05vw, 1.05rem);
+}
+.field-track strong {
+  color: #1c1204;
+  background: linear-gradient(135deg, var(--gold), #fff1a6);
+  border-color: rgba(246, 202, 99, .8);
+}
+.field-note {
+  position: relative;
+  z-index: 1;
+  display: flex;
+  justify-content: space-between;
+  gap: 10px;
+  width: 100%;
+  color: var(--muted);
+  font-size: .68rem;
+  text-transform: uppercase;
+}
+.field-note em { font-style: normal; color: var(--gold); }
 .proposition, .hardways { min-height: 74px; }
 .stack {
   position: absolute;
@@ -540,11 +596,49 @@ select {
   box-shadow: 0 14px 34px rgba(0,0,0,.42);
 }
 
-@media (max-width: 1120px) {
-  .table-screen { grid-template-columns: 1fr; }
+@media (max-width: 1320px) {
+  .table-screen {
+    grid-template-columns: minmax(230px, .72fr) minmax(560px, 1.28fr);
+    grid-template-areas:
+      "left table"
+      "right table";
+  }
+  .right-rail {
+    align-self: stretch;
+    max-height: none;
+  }
+  .chip {
+    font-size: .82rem;
+  }
+  .panel { padding: 14px; }
+}
+
+@media (max-width: 980px) {
+  .table-screen {
+    grid-template-columns: 1fr;
+    grid-template-areas:
+      "left"
+      "table"
+      "right";
+  }
+  .left-rail {
+    display: grid;
+    grid-template-columns: minmax(210px, .9fr) minmax(220px, 1.1fr);
+    gap: 14px;
+    align-items: start;
+  }
+  .left-rail .dealer,
+  .left-rail .dice-stage,
+  .left-rail .roll-button { grid-column: 1; }
+  .left-rail .chip-rack,
+  .left-rail .select-row,
+  .left-rail [data-auto-bet],
+  .left-rail .clear-button,
+  .left-rail .ambience-button,
+  .left-rail .quick-bets { grid-column: 2; }
   .felt-wrap { overflow-x: auto; }
-  .craps-felt { min-width: 860px; }
-  .craps-felt:has(.crapless-points) { min-width: 980px; }
+  .craps-felt { min-width: 820px; transform: none; }
+  .craps-felt:has(.crapless-points) { min-width: 960px; }
   .history-band { grid-template-columns: 1fr; }
 }
 @media (max-width: 760px) {
@@ -554,4 +648,38 @@ select {
   .hero { min-height: 680px; }
   .mode-strip { margin-top: 0; }
   .hero-actions button { flex: 1 1 100%; }
+  .table-screen { padding: 8px; gap: 10px; }
+  .left-rail { grid-template-columns: 1fr; }
+  .left-rail .dealer,
+  .left-rail .dice-stage,
+  .left-rail .roll-button,
+  .left-rail .chip-rack,
+  .left-rail .select-row,
+  .left-rail [data-auto-bet],
+  .left-rail .clear-button,
+  .left-rail .ambience-button,
+  .left-rail .quick-bets { grid-column: 1; }
+  .dice-stage { min-height: 88px; margin: 12px 0; }
+  .die { width: 58px; height: 58px; padding: 9px; gap: 5px; }
+  .chip-rack { grid-template-columns: repeat(6, minmax(42px, 1fr)); gap: 7px; margin: 12px 0; }
+  .chip { border-width: 3px; font-size: .72rem; }
+  .quick-bets { grid-template-columns: 1fr 1fr; }
+  .craps-felt { min-width: 740px; }
+  .craps-felt:has(.crapless-points) { min-width: 900px; }
+  .number-controls {
+    opacity: 1;
+    transform: none;
+  }
+  .right-rail { font-size: .92rem; }
+}
+
+@media (max-width: 520px) {
+  .topbar nav { gap: 6px; }
+  .topbar nav button { padding: 9px 10px; }
+  .bankroll-pill { width: 100%; }
+  .craps-felt { min-width: 680px; }
+  .craps-felt:has(.crapless-points) { min-width: 840px; }
+  .field-real { padding-right: 58px; }
+  .field-track { gap: 3px; }
+  .field-note { font-size: .6rem; }
 }

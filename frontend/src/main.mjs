@@ -240,21 +240,7 @@ function crapsTable() {
           <div class="layout-row points ${game.table.crapless ? "crapless-points" : ""}">
             ${getPointNumbers(game).map((number) => betZone("place", number, number, `Place / Buy / Lay ${number}`)).join("")}
           </div>
-          <div class="layout-row lines">
-            ${betZone("passLine", "", "PASS LINE", "Pass Line")}
-            ${game.table.crapless ? `<button class="bet-zone disabled" title="No don't bets on Crapless Craps"><span>NO DON'T BETS</span></button>` : betZone("dontPass", "", "DON'T PASS", "Don't Pass")}
-          </div>
-          <div class="layout-row come">
-            ${betZone("come", "", "COME", "Come")}
-            ${game.table.crapless ? `<button class="bet-zone disabled" title="No don't come on Crapless Craps"><span>CRAPLESS TABLE</span></button>` : betZone("dontCome", "", "DON'T COME", "Don't Come")}
-            ${fieldZone()}
-          </div>
-          <div class="layout-row action">
-            ${["hard4", "hard6", "hard8", "hard10"].map((key) => betZone("hardways", key, key.replace("hard", "HARD "), "Hardway")).join("")}
-            ${["any7", "anyCraps", "yo", "aces", "boxcars"].map((key) => betZone("proposition", key, propLabel(key), "Proposition")).join("")}
-            ${betZone("big", 6, "BIG 6", "Big 6")}
-            ${betZone("big", 8, "BIG 8", "Big 8")}
-          </div>
+          ${palaceTableLayout(game)}
           <div class="center-rail">
             <strong>Shooter: ${game.shooters[game.shooterIndex]}</strong>
             <span>${game.table.crapless ? "Crapless Craps" : "Classic Craps"} • Point ${game.point ?? "off"} • ${money(game.table.min)} min • ${game.table.oddsMultiple}x odds</span>
@@ -287,7 +273,59 @@ function crapsTable() {
   `;
 }
 
-function betZone(type, number, label, title) {
+function palaceTableLayout(game) {
+  return `
+    <div class="palace-layout">
+      ${playerWing("left", game)}
+      ${centerIsland()}
+      ${playerWing("right", game)}
+    </div>
+  `;
+}
+
+function playerWing(side, game) {
+  const showStacks = side === "left";
+  const dontCome = game.table.crapless
+    ? `<div class="bet-zone disabled palace-disabled"><span>NO DON'T COME</span></div>`
+    : betZone("dontCome", "", "DON'T COME BAR", "Don't Come", { showStacks });
+  const dontPass = game.table.crapless
+    ? `<div class="bet-zone disabled palace-disabled"><span>NO DON'T PASS</span></div>`
+    : betZone("dontPass", "", "DON'T PASS BAR", "Don't Pass", { showStacks });
+  return `
+    <div class="player-wing ${side}-wing">
+      <div class="wing-top">
+        ${dontCome}
+        ${betZone("come", "", "COME", "Come", { showStacks })}
+      </div>
+      ${fieldZone(side, showStacks)}
+      ${dontPass}
+      ${betZone("passLine", "", "PASS LINE", "Pass Line", { showStacks })}
+    </div>
+  `;
+}
+
+function centerIsland() {
+  return `
+    <div class="center-island">
+      <div class="island-banner"><span>4 TO 1</span><strong>ANY SEVEN</strong><span>4 TO 1</span></div>
+      <div class="island-grid">
+        ${["hard4", "hard6", "hard8", "hard10"].map((key) => betZone("hardways", key, key.replace("hard", "HARD "), "Hardway")).join("")}
+        ${["aces", "yo", "boxcars", "any7"].map((key) => betZone("proposition", key, propLabel(key), "Proposition")).join("")}
+      </div>
+      <div class="horn-row">
+        <div class="horn-label">CENTER ACTION</div>
+        ${betZone("proposition", "anyCraps", "ANY CRAPS", "Any Craps")}
+      </div>
+      <div class="big-row">
+        ${betZone("big", 6, "BIG 6", "Big 6")}
+        ${betZone("big", 8, "BIG 8", "Big 8")}
+      </div>
+    </div>
+  `;
+}
+
+function betZone(type, number, label, title, options = {}) {
+  const showStacks = options.showStacks !== false;
   const isNumberBox = type === "place" && number !== "";
   const bets = isNumberBox
     ? snapshot.game.bets.filter((bet) => ["place", "buy", "lay", "come", "dontCome", "odds"].includes(bet.type) && `${bet.number ?? ""}` === `${number}`)
@@ -300,16 +338,16 @@ function betZone(type, number, label, title) {
       ${isPoint ? `<em class="point-marker">ON</em>` : ""}
       <span>${label}</span>
       ${isNumberBox ? `<div class="number-controls"><button data-number-action="press" data-number="${number}">Press</button><button data-number-action="pull" data-number="${number}">Pull</button><button data-number-action="buy" data-number="${number}">Buy</button><button data-number-action="lay" data-number="${number}">Lay</button></div>` : ""}
-      <div class="stack">${chips.map((chip, index) => `<i class="bet-chip chipv-${chip}" style="--stack:${index}">${chip}</i>`).join("")}${codes ? `<b>${codes}</b>` : ""}</div>
+      ${showStacks ? `<div class="stack">${chips.map((chip, index) => `<i class="bet-chip chipv-${chip}" style="--stack:${index}">${chip}</i>`).join("")}${codes ? `<b>${codes}</b>` : ""}</div>` : ""}
     </div>
   `;
 }
 
-function fieldZone() {
+function fieldZone(side = "", showStacks = true) {
   const bets = snapshot.game.bets.filter((bet) => bet.type === "field");
   const chips = chipBreakdown(bets.reduce((sum, bet) => sum + bet.amount, 0));
   return `
-    <div class="bet-zone field field-real" data-bet-type="field" data-bet-number="" title="Field" role="button" tabindex="0">
+    <div class="bet-zone field field-real field-${side}" data-bet-type="field" data-bet-number="" title="Field" role="button" tabindex="0">
       <span class="field-title">FIELD</span>
       <div class="field-track">
         <strong>2</strong>
@@ -321,7 +359,7 @@ function fieldZone() {
         <strong>12</strong>
       </div>
       <div class="field-note"><b>2 & 12 pay double</b><em>One roll</em></div>
-      <div class="stack">${chips.map((chip, index) => `<i class="bet-chip chipv-${chip}" style="--stack:${index}">${chip}</i>`).join("")}</div>
+      ${showStacks ? `<div class="stack">${chips.map((chip, index) => `<i class="bet-chip chipv-${chip}" style="--stack:${index}">${chip}</i>`).join("")}</div>` : ""}
     </div>
   `;
 }

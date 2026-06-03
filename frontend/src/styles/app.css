@@ -1,16 +1,17 @@
 :root {
   color-scheme: dark;
-  --felt: #07523f;
-  --felt-dark: #043227;
-  --gold: #f6ca63;
-  --coral: #ff5368;
-  --cyan: #48e7ff;
+  --felt: #08438f;
+  --felt-dark: #021a4d;
+  --felt-royal: #0b5fc0;
+  --gold: #ffd55a;
+  --coral: #ff314f;
+  --cyan: #42e8ff;
   --violet: #a26bff;
-  --ink: #08100f;
-  --panel: rgba(9, 18, 21, 0.78);
-  --line: rgba(255, 255, 255, 0.18);
-  --text: #f8f1df;
-  --muted: #b9c9c4;
+  --ink: #061024;
+  --panel: rgba(4, 14, 38, 0.82);
+  --line: rgba(255, 213, 90, 0.25);
+  --text: #fff8df;
+  --muted: #b9c8e6;
   font-family: Inter, ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
 }
 
@@ -20,9 +21,10 @@ body {
   min-height: 100vh;
   color: var(--text);
   background:
-    radial-gradient(circle at 20% 10%, rgba(72, 231, 255, 0.18), transparent 24rem),
-    radial-gradient(circle at 85% 0%, rgba(255, 83, 104, 0.18), transparent 22rem),
-    linear-gradient(130deg, #080909, #15100f 45%, #031c19);
+    radial-gradient(circle at 16% 8%, rgba(66, 232, 255, 0.24), transparent 24rem),
+    radial-gradient(circle at 88% 0%, rgba(255, 49, 79, 0.22), transparent 22rem),
+    radial-gradient(circle at 50% 110%, rgba(255, 213, 90, 0.13), transparent 34rem),
+    linear-gradient(130deg, #030816, #061a46 48%, #020616);
 }
 
 button, select, input { font: inherit; }
@@ -39,7 +41,7 @@ main { min-height: calc(100vh - 76px); }
   min-height: 76px;
   padding: 12px clamp(14px, 2vw, 28px);
   border-bottom: 1px solid var(--line);
-  background: rgba(7, 11, 12, 0.86);
+  background: rgba(3, 9, 26, 0.88);
   backdrop-filter: blur(18px);
 }
 .brand {
@@ -60,7 +62,7 @@ main { min-height: calc(100vh - 76px); }
   border: 2px solid var(--gold);
   border-radius: 50%;
   color: var(--gold);
-  box-shadow: 0 0 24px rgba(246, 202, 99, 0.35);
+  box-shadow: 0 0 24px rgba(255, 213, 90, 0.35);
 }
 .brand small, .bankroll-pill span, .eyebrow, .dealer span, .meter span, .assistant-box span, .stat-card span { display: block; color: var(--muted); font-size: 0.78rem; }
 .topbar nav {
@@ -87,16 +89,16 @@ main { min-height: calc(100vh - 76px); }
 }
 .bankroll-pill {
   padding: 8px 14px;
-  border: 1px solid rgba(246, 202, 99, 0.5);
+  border: 1px solid rgba(255, 213, 90, 0.5);
   border-radius: 8px;
-  background: rgba(246, 202, 99, 0.08);
+  background: rgba(255, 213, 90, 0.08);
 }
 .primary, .roll-button {
   border: 0;
   border-radius: 8px;
   color: #120b04;
   background: linear-gradient(135deg, var(--gold), #fff2ae);
-  box-shadow: 0 12px 28px rgba(246, 202, 99, 0.22);
+  box-shadow: 0 12px 28px rgba(255, 213, 90, 0.22);
   padding: 12px 16px;
   font-weight: 800;
 }
@@ -114,15 +116,18 @@ main { min-height: calc(100vh - 76px); }
   position: absolute;
   inset: auto 0 0;
   height: 34vh;
-  background: linear-gradient(transparent, rgba(7, 82, 63, 0.85));
+  background: linear-gradient(transparent, rgba(3, 12, 36, 0.92));
 }
 .hero-backdrop {
   position: absolute;
   inset: 0;
   background:
-    linear-gradient(90deg, rgba(5, 10, 9, 0.9), rgba(5, 10, 9, 0.28)),
-    url("/src/assets/table-felt.svg") center/cover;
-  filter: saturate(1.2);
+    radial-gradient(circle at 74% 15%, rgba(66, 232, 255, 0.18), transparent 18rem),
+    radial-gradient(circle at 35% 75%, rgba(255, 213, 90, 0.14), transparent 22rem),
+    linear-gradient(90deg, rgba(3, 8, 22, 0.94), rgba(5, 34, 90, 0.58)),
+    repeating-linear-gradient(135deg, rgba(255, 213, 90, 0.055) 0 2px, transparent 2px 24px),
+    linear-gradient(135deg, #05245d, #0b5fc0 55%, #021a4d);
+  filter: saturate(1.15);
 }
 .hero-content {
   position: relative;
@@ -134,9 +139,9 @@ main { min-height: calc(100vh - 76px); }
   font-size: clamp(3rem, 9vw, 7.5rem);
   line-height: 0.9;
   letter-spacing: 0;
-  text-shadow: 0 0 28px rgba(72, 231, 255, 0.28), 0 0 42px rgba(255, 83, 104, 0.2);
+  text-shadow: 0 0 28px rgba(66, 232, 255, 0.28), 0 0 42px rgba(255, 49, 79, 0.2);
 }
-.hero p { max-width: 660px; color: #e5f2ed; font-size: 1.08rem; line-height: 1.7; }
+.hero p { max-width: 660px; color: #dfeaff; font-size: 1.08rem; line-height: 1.7; }
 .hero-actions { display: flex; flex-wrap: wrap; gap: 12px; }
 .home-menu {
   display: grid;
@@ -153,7 +158,7 @@ main { min-height: calc(100vh - 76px); }
   border: 1px solid var(--line);
   border-radius: 8px;
   color: var(--text);
-  background: rgba(7, 18, 17, .74);
+  background: rgba(4, 18, 49, .78);
   padding: 18px;
   text-align: left;
   box-shadow: 0 20px 80px rgba(0, 0, 0, 0.32);
@@ -161,7 +166,7 @@ main { min-height: calc(100vh - 76px); }
 }
 .home-tile:hover {
   transform: translateY(-3px);
-  border-color: rgba(72, 231, 255, 0.55);
+  border-color: rgba(66, 232, 255, 0.55);
 }
 .home-tile strong {
   font-size: clamp(1.35rem, 2vw, 1.85rem);
@@ -173,7 +178,7 @@ main { min-height: calc(100vh - 76px); }
 .home-tile.primary-tile {
   color: #130d04;
   background: linear-gradient(135deg, var(--gold), #fff1a8);
-  border-color: rgba(246, 202, 99, .85);
+  border-color: rgba(255, 213, 90, .85);
 }
 .home-tile.primary-tile span { color: rgba(19, 13, 4, .72); }
 .home-tile.unavailable {
@@ -191,7 +196,7 @@ main { min-height: calc(100vh - 76px); }
   background: var(--panel);
   box-shadow: 0 20px 80px rgba(0, 0, 0, 0.32);
 }
-.casino-table-card:hover { transform: translateY(-3px); border-color: rgba(72, 231, 255, 0.55); }
+.casino-table-card:hover { transform: translateY(-3px); border-color: rgba(66, 232, 255, 0.55); }
 .casino-table-card { transition: 180ms ease; }
 
 .page-band { padding: clamp(24px, 5vw, 56px); }
@@ -205,15 +210,19 @@ main { min-height: calc(100vh - 76px); }
 .casino-table-card { padding: 20px; }
 .mini-table {
   height: 110px;
-  border: 8px solid #5c3020;
+  border: 8px solid #ffd55a;
   border-radius: 42px;
-  background: radial-gradient(circle, #0a6d52, var(--felt-dark));
+  background:
+    linear-gradient(rgba(255, 213, 90, .22) 2px, transparent 2px),
+    linear-gradient(90deg, rgba(255, 213, 90, .22) 2px, transparent 2px),
+    radial-gradient(circle, var(--felt-royal), var(--felt-dark));
+  background-size: 42px 42px, 42px 42px, cover;
   display: flex;
   align-items: center;
   justify-content: center;
   gap: 12px;
 }
-.mini-table span { width: 34px; height: 34px; border-radius: 50%; background: var(--gold); box-shadow: 0 0 18px rgba(246, 202, 99, 0.42); }
+.mini-table span { width: 34px; height: 34px; border-radius: 50%; background: var(--gold); box-shadow: 0 0 18px rgba(255, 213, 90, 0.42); }
 .card-stats { display: flex; flex-wrap: wrap; gap: 8px; margin: 16px 0; }
 .card-stats span, .blueprint code { border: 1px solid var(--line); border-radius: 8px; padding: 6px 8px; color: var(--muted); }
 
@@ -279,7 +288,7 @@ main { min-height: calc(100vh - 76px); }
 }
 .quick-bets button:hover { border-color: var(--gold); color: var(--gold); }
 .ambience-button, .clear-button { width: 100%; margin-top: 10px; }
-.ambience-button.active { border-color: var(--gold); color: var(--gold); background: rgba(246, 202, 99, 0.1); }
+.ambience-button.active { border-color: var(--gold); color: var(--gold); background: rgba(255, 213, 90, 0.1); }
 .chip {
   aspect-ratio: 1;
   border-radius: 50%;
@@ -303,7 +312,7 @@ main { min-height: calc(100vh - 76px); }
 select {
   width: 100%;
   color: var(--text);
-  background: #12211f;
+  background: #06183f;
   border: 1px solid var(--line);
   border-radius: 8px;
   padding: 10px;
@@ -313,27 +322,29 @@ select {
   position: relative;
   min-height: clamp(520px, 58vw, 720px);
   min-width: 0;
+  overflow-x: auto;
 }
 .table-glow {
   position: absolute;
   inset: 28px;
   border-radius: 44%;
-  box-shadow: 0 0 90px rgba(72, 231, 255, 0.18), 0 0 120px rgba(255, 83, 104, 0.14);
+  box-shadow: 0 0 90px rgba(66, 232, 255, 0.22), 0 0 120px rgba(255, 49, 79, 0.16), 0 0 160px rgba(255, 213, 90, 0.1);
 }
 .craps-felt {
   position: relative;
   min-height: clamp(520px, 58vw, 720px);
-  padding: clamp(44px, 4vw, 62px) clamp(16px, 2.1vw, 30px) clamp(20px, 2vw, 30px);
-  border: clamp(12px, 1.4vw, 18px) solid #5f2f1f;
-  border-radius: 12% / 8%;
+  padding: clamp(46px, 4vw, 64px) clamp(16px, 2.1vw, 30px) clamp(20px, 2vw, 30px);
+  border: clamp(10px, 1.1vw, 16px) solid var(--gold);
+  border-radius: 54px;
   background:
-    linear-gradient(rgba(255,255,255,.035) 1px, transparent 1px),
-    linear-gradient(90deg, rgba(255,255,255,.035) 1px, transparent 1px),
-    radial-gradient(circle at 50% 10%, rgba(26, 143, 105, 0.9), transparent 46%),
-    var(--felt);
-  background-size: 22px 22px, 22px 22px, cover, cover;
-  box-shadow: inset 0 0 70px rgba(0,0,0,.48), 0 24px 80px rgba(0,0,0,.46);
-  transform: perspective(1000px) rotateX(4deg);
+    linear-gradient(rgba(255, 213, 90, .075) 1px, transparent 1px),
+    linear-gradient(90deg, rgba(255, 213, 90, .075) 1px, transparent 1px),
+    radial-gradient(circle at 50% 4%, rgba(66, 232, 255, 0.18), transparent 34%),
+    radial-gradient(circle at 50% 95%, rgba(255, 49, 79, 0.16), transparent 38%),
+    linear-gradient(135deg, var(--felt-royal), var(--felt) 42%, var(--felt-dark));
+  background-size: 28px 28px, 28px 28px, cover, cover, cover;
+  box-shadow: inset 0 0 70px rgba(0,0,0,.48), 0 0 0 4px rgba(255,213,90,.22), 0 24px 90px rgba(0,0,0,.5);
+  transform: perspective(1000px) rotateX(2.5deg);
 }
 .puck {
   position: absolute;
@@ -354,42 +365,125 @@ select {
 .layout-row { display: grid; gap: 10px; margin-bottom: 12px; }
 .points { grid-template-columns: repeat(6, 1fr); }
 .points.crapless-points { grid-template-columns: repeat(5, 1fr); }
-.lines { grid-template-columns: 2fr 1fr; }
-.come { grid-template-columns: minmax(120px, 1.05fr) minmax(120px, .95fr) minmax(260px, 2.15fr); }
-.action { grid-template-columns: repeat(auto-fit, minmax(78px, 1fr)); }
+.points .bet-zone {
+  min-height: clamp(92px, 8.8vw, 124px);
+  color: var(--gold);
+}
+.points .bet-zone > span {
+  font-size: clamp(2.3rem, 5vw, 4.6rem);
+  font-weight: 500;
+  text-shadow: 0 0 14px rgba(255, 213, 90, .34);
+}
+.palace-layout {
+  display: grid;
+  grid-template-columns: minmax(270px, 1fr) minmax(240px, .72fr) minmax(270px, 1fr);
+  gap: 12px;
+  align-items: stretch;
+}
+.player-wing {
+  display: grid;
+  grid-template-rows: minmax(120px, 1fr) minmax(122px, .9fr) minmax(76px, .56fr) minmax(86px, .64fr);
+  gap: 10px;
+  padding: 10px;
+  border: 3px solid var(--gold);
+  background: rgba(2, 18, 64, .32);
+  box-shadow: inset 0 0 34px rgba(0,0,0,.28);
+}
+.left-wing { border-radius: 16px 6px 16px 44px; }
+.right-wing { border-radius: 6px 16px 44px 16px; }
+.wing-top {
+  display: grid;
+  grid-template-columns: minmax(118px, .7fr) minmax(170px, 1.3fr);
+  gap: 10px;
+}
+.center-island {
+  display: grid;
+  grid-template-rows: auto 1fr auto auto;
+  gap: 10px;
+  padding: 10px;
+  border: 3px solid var(--gold);
+  border-radius: 120px 120px 18px 18px;
+  background: rgba(3, 18, 58, .54);
+  box-shadow: inset 0 0 42px rgba(0,0,0,.34);
+}
+.island-banner,
+.horn-label {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  min-height: 34px;
+  border: 2px solid var(--gold);
+  border-radius: 999px;
+  color: var(--gold);
+  background: rgba(0,0,0,.2);
+  font-weight: 900;
+}
+.island-banner strong,
+.horn-label {
+  color: var(--coral);
+  text-shadow: 0 0 12px rgba(255, 49, 79, .35);
+}
+.island-grid {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(88px, 1fr));
+  gap: 8px;
+}
+.horn-row,
+.big-row {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 8px;
+}
 .bet-zone {
   position: relative;
   display: grid;
   place-items: center;
   min-height: clamp(78px, 8.4vw, 98px);
-  border: 2px solid rgba(255,255,255,.42);
+  border: 2px solid rgba(255, 213, 90, .68);
   border-radius: 8px;
-  color: #fdf8e8;
-  background: rgba(255,255,255,.035);
+  color: #fff8df;
+  background: rgba(5, 28, 89, .38);
   overflow: hidden;
   transition: 160ms ease;
   cursor: pointer;
 }
 .bet-zone:hover {
   border-color: var(--gold);
-  background: rgba(246, 202, 99, 0.1);
+  background: rgba(255, 213, 90, 0.12);
   transform: translateY(-2px);
 }
 .bet-zone.disabled {
   cursor: not-allowed;
   opacity: .72;
-  background: rgba(255, 83, 104, 0.08);
+  background: rgba(255, 49, 79, 0.1);
 }
 .bet-zone.disabled:hover {
-  border-color: rgba(255,255,255,.42);
+  border-color: rgba(255, 213, 90, .4);
   color: var(--text);
   transform: none;
 }
 .bet-zone.point-active {
   border-color: var(--gold);
-  box-shadow: inset 0 0 24px rgba(246, 202, 99, 0.16), 0 0 18px rgba(246, 202, 99, 0.16);
+  box-shadow: inset 0 0 24px rgba(255, 213, 90, 0.18), 0 0 18px rgba(255, 213, 90, 0.2);
 }
 .bet-zone span { position: relative; z-index: 1; font-weight: 900; letter-spacing: .04em; }
+.come > span {
+  color: var(--coral);
+  font-size: clamp(2.4rem, 4.8vw, 4.8rem);
+  font-weight: 500;
+  text-shadow: 0 0 18px rgba(255, 49, 79, .42);
+}
+.passLine > span {
+  color: #fffef1;
+  font-size: clamp(1.4rem, 2.7vw, 2.6rem);
+  font-weight: 700;
+}
+.dontPass > span,
+.dontCome > span {
+  color: #dce8ff;
+  font-size: clamp(.9rem, 1.4vw, 1.2rem);
+}
 .number-controls {
   position: absolute;
   left: 6px;
@@ -409,10 +503,10 @@ select {
   transform: translateY(0);
 }
 .number-controls button {
-  border: 1px solid rgba(255,255,255,.32);
+  border: 1px solid rgba(255, 213, 90, .34);
   border-radius: 6px;
   color: var(--text);
-  background: rgba(4, 18, 16, .82);
+  background: rgba(3, 12, 36, .86);
   padding: 4px 2px;
   font-size: .62rem;
   font-weight: 800;
@@ -436,19 +530,21 @@ select {
   font-size: .72rem;
   box-shadow: 0 8px 18px rgba(0,0,0,.42);
 }
-.field { background: rgba(246, 202, 99, 0.1); }
+.field { background: rgba(255, 213, 90, 0.1); }
 .field-real {
   align-content: center;
   gap: 6px;
-  padding: 8px 74px 8px 12px;
+  min-height: 112px;
+  padding: 10px 74px 10px 14px;
   background:
-    linear-gradient(90deg, rgba(246, 202, 99, .16), rgba(246, 202, 99, .055)),
-    rgba(255,255,255,.035);
+    linear-gradient(90deg, rgba(255, 213, 90, .18), rgba(255, 213, 90, .055)),
+    rgba(2, 18, 64, .48);
+  border-radius: 18px 18px 36px 36px;
 }
 .field-title {
-  font-size: clamp(.9rem, 1.4vw, 1.25rem);
+  font-size: clamp(1.1rem, 1.9vw, 1.65rem);
   color: #fff5ca;
-  text-shadow: 0 0 12px rgba(246, 202, 99, .25);
+  text-shadow: 0 0 12px rgba(255, 213, 90, .28);
 }
 .field-track {
   position: relative;
@@ -466,13 +562,13 @@ select {
   min-height: 30px;
   border: 1px solid rgba(255,255,255,.3);
   border-radius: 6px;
-  background: rgba(0,0,0,.16);
+  background: rgba(0,0,0,.22);
   font-size: clamp(.78rem, 1.05vw, 1.05rem);
 }
 .field-track strong {
   color: #1c1204;
   background: linear-gradient(135deg, var(--gold), #fff1a6);
-  border-color: rgba(246, 202, 99, .8);
+  border-color: rgba(255, 213, 90, .8);
 }
 .field-note {
   position: relative;
@@ -486,11 +582,22 @@ select {
   text-transform: uppercase;
 }
 .field-note em { font-style: normal; color: var(--gold); }
-.proposition, .hardways { min-height: 74px; }
+.proposition, .hardways, .big { min-height: 74px; }
+.proposition {
+  border-color: rgba(255, 49, 79, .72);
+}
+.proposition > span {
+  color: var(--coral);
+  text-shadow: 0 0 12px rgba(255, 49, 79, .34);
+}
+.hardways > span,
+.big > span {
+  color: var(--gold);
+}
 .stack {
   position: absolute;
   right: 12px;
-  bottom: 28px;
+  bottom: 24px;
   width: 42px;
   height: 42px;
 }
@@ -518,7 +625,7 @@ select {
   display: grid;
   place-items: center;
   border-radius: 999px;
-  background: #101010;
+  background: #07102a;
   border: 1px solid rgba(255,255,255,.7);
   color: white;
   font-size: .55rem;
@@ -529,16 +636,16 @@ select {
 .stack i.chipv-25 { background: linear-gradient(90deg, #0b8847, #38d178); }
 .stack i.chipv-100 { background: linear-gradient(90deg, #111, #555); }
 .stack i.chipv-500 { background: linear-gradient(90deg, #6330a5, #a26bff); }
-.stack i.chipv-1000 { background: linear-gradient(90deg, #b97816, #f6ca63); color: #1a1003; }
+.stack i.chipv-1000 { background: linear-gradient(90deg, #b97816, #ffd55a); color: #1a1003; }
 .center-rail {
   display: flex;
   justify-content: space-between;
   gap: 16px;
   margin-top: 18px;
   padding: 14px 16px;
-  border: 1px solid rgba(255,255,255,.28);
+  border: 1px solid rgba(255, 213, 90, .36);
   border-radius: 8px;
-  background: rgba(0,0,0,.22);
+  background: rgba(3, 12, 36, .5);
 }
 
 .meter, .bet-item, .lobby-row {
@@ -600,7 +707,7 @@ select {
 .settings-stack label { grid-template-columns: 1fr auto; align-items: center; border-bottom: 1px solid var(--line); padding-bottom: 10px; }
 .roadmap, .blueprint { margin-top: 16px; padding: 18px; }
 .tutorial-grid article { padding: 18px; cursor: pointer; }
-.tutorial-grid article.active { border-color: var(--gold); background: rgba(246, 202, 99, 0.09); }
+.tutorial-grid article.active { border-color: var(--gold); background: rgba(255, 213, 90, 0.09); }
 .blueprint div { display: flex; flex-wrap: wrap; gap: 8px; }
 
 .confetti {
@@ -633,7 +740,7 @@ select {
   transform: translateX(-50%);
   max-width: min(520px, calc(100vw - 32px));
   padding: 12px 16px;
-  border: 1px solid rgba(255, 83, 104, 0.6);
+  border: 1px solid rgba(255, 49, 79, 0.6);
   border-radius: 8px;
   color: var(--text);
   background: rgba(18, 8, 10, 0.92);
@@ -680,9 +787,8 @@ select {
   .left-rail .clear-button,
   .left-rail .ambience-button,
   .left-rail .quick-bets { grid-column: 2; }
-  .felt-wrap { overflow-x: auto; }
-  .craps-felt { min-width: 820px; transform: none; }
-  .craps-felt:has(.crapless-points) { min-width: 960px; }
+  .craps-felt { min-width: 900px; transform: none; }
+  .craps-felt:has(.crapless-points) { min-width: 980px; }
   .history-band { grid-template-columns: 1fr; }
 }
 @media (max-width: 760px) {
@@ -709,8 +815,8 @@ select {
   .chip-rack { grid-template-columns: repeat(6, minmax(42px, 1fr)); gap: 7px; margin: 12px 0; }
   .chip { border-width: 3px; font-size: .72rem; }
   .quick-bets { grid-template-columns: 1fr 1fr; }
-  .craps-felt { min-width: 740px; }
-  .craps-felt:has(.crapless-points) { min-width: 900px; }
+  .craps-felt { min-width: 840px; }
+  .craps-felt:has(.crapless-points) { min-width: 940px; }
   .number-controls {
     opacity: 1;
     transform: none;
@@ -722,8 +828,8 @@ select {
   .topbar nav { gap: 6px; }
   .topbar nav button { padding: 9px 10px; }
   .bankroll-pill { width: 100%; }
-  .craps-felt { min-width: 680px; }
-  .craps-felt:has(.crapless-points) { min-width: 840px; }
+  .craps-felt { min-width: 800px; }
+  .craps-felt:has(.crapless-points) { min-width: 900px; }
   .field-real { padding-right: 58px; }
   .field-track { gap: 3px; }
   .field-note { font-size: .6rem; }

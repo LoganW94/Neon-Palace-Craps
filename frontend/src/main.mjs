@@ -13,6 +13,12 @@ store.subscribe((next) => {
   render();
 });
 
+setInterval(() => {
+  if (snapshot.ui.page !== "table" || snapshot.ui.diceRolling) return;
+  const tickEvent = store.tick();
+  if (tickEvent?.type === "aiRollDue") aiRollWithAnimation();
+}, 1000);
+
 Promise.allSettled([getLobbyTables(), getProfile(), getMultiplayerBlueprint()]).then(([lobby, profile, blueprint]) => {
   store.setUi({
     lobby: lobby.value?.tables ?? [],
@@ -24,7 +30,7 @@ Promise.allSettled([getLobbyTables(), getProfile(), getMultiplayerBlueprint()]).
 function render() {
   const { ui } = snapshot;
   app.innerHTML = `
-    <div class="app-shell" data-page="${ui.page}">
+    <div class="app-shell" data-page="${ui.page}" style="--ui-scale:${ui.uiScale ?? 0.9}">
       ${nav()}
       <main>
         ${ui.page === "home" ? home() : ""}
@@ -106,7 +112,10 @@ document.addEventListener("click", (event) => {
 
 document.addEventListener("change", (event) => {
   const target = event.target;
-  if (target.matches("[data-ui]")) store.setUi({ [target.dataset.ui]: target.value });
+  if (target.matches("[data-ui]")) {
+    const value = target.type === "range" ? Number(target.value) : target.value;
+    store.setUi({ [target.dataset.ui]: value });
+  }
   if (target.matches("[data-check]")) store.setUi({ [target.dataset.check]: target.checked });
   if (target.matches("[data-sound]")) {
     sound.toggleSound(target.checked);
@@ -115,6 +124,13 @@ document.addEventListener("change", (event) => {
   if (target.matches("[data-music]")) {
     sound.toggleMusic(target.checked);
     store.setUi({ music: target.checked });
+  }
+});
+
+document.addEventListener("input", (event) => {
+  const target = event.target;
+  if (target.matches("[data-ui]") && target.type === "range") {
+    store.setUi({ [target.dataset.ui]: Number(target.value) });
   }
 });
 
@@ -127,6 +143,18 @@ function rollWithAnimation() {
     if (event.net > 0) sound.win(event.net > 200);
     if (event.net < 0) sound.loss();
     if (event.net > 300) celebrate();
+  }, 760);
+}
+
+function aiRollWithAnimation() {
+  store.setUi({ diceRolling: true });
+  sound.dice();
+  setTimeout(() => {
+    const event = store.aiTurn();
+    store.setUi({ diceRolling: false });
+    if (event?.net > 0) sound.win(event.net > 200);
+    if (event?.net < 0) sound.loss();
+    if (event?.net > 300) celebrate();
   }, 760);
 }
 
@@ -205,6 +233,9 @@ function crapsTable() {
   const { game, ui, advice } = snapshot;
   const pass = game.bets.filter((bet) => bet.owner === "player");
   const currentBetTotal = game.bets.reduce((sum, bet) => sum + bet.amount, 0);
+  const playerBetTotal = pass.reduce((sum, bet) => sum + bet.amount, 0);
+  const shooter = game.players?.[game.shooterIndex] ?? { name: game.shooters[game.shooterIndex], human: game.shooterIndex === 0 };
+  const playerTurn = Boolean(shooter.human);
   return `
     <section class="table-screen ${ui.rightRailCollapsed ? "right-collapsed" : ""}">
       <div class="table-hud panel">
@@ -216,7 +247,8 @@ function crapsTable() {
           ${dice(game.rollHistory[0]?.die1 ?? 1)}
           ${dice(game.rollHistory[0]?.die2 ?? 1)}
         </div>
-        <button class="roll-button" data-roll>Roll Dice</button>
+        <button class="roll-button" data-roll ${playerTurn ? "" : "disabled"}>${playerTurn ? "Roll Dice" : `${shooter.name} rolls`}</button>
+        ${betSlip(playerBetTotal, shooter)}
       </div>
       <div class="felt-wrap">
         <div class="table-glow"></div>
@@ -239,6 +271,7 @@ function crapsTable() {
           <div class="meter"><span>Current Bets</span><strong>${money(currentBetTotal)}</strong></div>
           <div class="meter"><span>Rolls</span><strong>${game.session.rolls}</strong></div>
           <div class="meter"><span>Hot / Cold</span><strong>${game.session.hotRoll} / ${game.session.coldRoll}</strong></div>
+          ${leaderboard()}
           <div class="assistant-box">
             <span>Strategy Assistant</span>
             <p>${advice}</p>
@@ -262,6 +295,9 @@ function crapsTable() {
             ${options({ none: "Off", martingale: "Martingale", ironCross: "Iron Cross", molly: "3 Point Molly", press: "Press 6/8" }, ui.autoStrategy)}
           </select>
         </label>
+        <label class="select-row scale-row">UI scale
+          <input type="range" min="0.72" max="1" step="0.04" value="${ui.uiScale ?? 0.9}" data-ui="uiScale">
+        </label>
         <button class="secondary" data-auto-bet>Run Strategy</button>
         <button class="secondary clear-button" data-clear-bets>Clear Removable Bets</button>
         <button class="secondary ambience-button ${ui.music ? "active" : ""}" data-table-music>${ui.music ? "Ambience On" : "Start Ambience"}</button>
@@ -276,6 +312,51 @@ function crapsTable() {
       <div class="roll-history">${game.rollHistory.slice(0, 18).map((roll) => `<span class="${roll.total === 7 ? "seven" : ""}">${roll.total}</span>`).join("")}</div>
       <div class="ledger">${game.ledger.slice(0, 5).map((item) => `<span class="${item.amount >= 0 ? "good" : "bad"}">${item.label}</span>`).join("")}</div>
     </section>
+  `;
+}
+
+function betSlip(playerBetTotal, shooter) {
+  const { game, ui } = snapshot;
+  const passOdds = game.bets
+    .filter((bet) => bet.owner === "player" && bet.type === "odds" && bet.parentType === "passLine")
+    .reduce((sum, bet) => sum + bet.amount, 0);
+  const lastNet = playerEventNet(ui.lastEvent);
+  return `
+    <div class="bet-slip">
+      <div><span>Shooter</span><strong>${shooter.name}</strong></div>
+      <div><span>Turn</span><strong>${shooter.human ? "Manual" : `${ui.turnSeconds ?? 0}s`}</strong></div>
+      <div><span>Your bets</span><strong>${money(playerBetTotal)}</strong></div>
+      <div><span>Pass odds</span><button class="slip-action" data-special-bet="passOdds" ${game.point ? "" : "disabled"}>${money(passOdds)} +</button></div>
+      <div><span>Last roll</span><strong class="${lastNet >= 0 ? "good" : "bad"}">${money(lastNet)}</strong></div>
+    </div>
+  `;
+}
+
+function playerEventNet(event) {
+  if (!event || event.type !== "rollResolved") return event?.net ?? 0;
+  const won = event.payouts
+    .filter((item) => item.owner === "player")
+    .reduce((sum, item) => sum + item.profit, 0);
+  const lost = event.losses
+    .filter((item) => item.owner === "player")
+    .reduce((sum, item) => sum + item.amount, 0);
+  return won - lost;
+}
+
+function leaderboard() {
+  const players = snapshot.game.players ?? [];
+  if (!players.length) return "";
+  const sorted = [...players].sort((a, b) => b.bankroll - a.bankroll);
+  return `
+    <div class="leaderboard mini-panel">
+      <strong>Table Leaderboard</strong>
+      ${sorted.map((player, index) => `
+        <div class="${player.human ? "you" : ""}">
+          <span>${index + 1}. ${player.name}</span>
+          <b>${money(player.bankroll)}</b>
+        </div>
+      `).join("")}
+    </div>
   `;
 }
 

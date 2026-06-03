@@ -72,6 +72,8 @@ const LAY_ODDS = {
 
 export function createInitialState(mode = "casino", startingBankroll) {
   const modeConfig = MODES[mode] ?? MODES.casino;
+  const playerBankroll = startingBankroll ?? modeConfig.bankroll;
+  const tablePlayers = createTablePlayers(playerBankroll, modeConfig.min);
   return {
     mode,
     table: {
@@ -81,11 +83,12 @@ export function createInitialState(mode = "casino", startingBankroll) {
       crapless: Boolean(modeConfig.crapless),
       pointNumbers: Boolean(modeConfig.crapless) ? CRAPLESS_POINT_NUMBERS : POINT_NUMBERS
     },
-    bankroll: startingBankroll ?? modeConfig.bankroll,
-    buyIn: startingBankroll ?? modeConfig.bankroll,
+    bankroll: playerBankroll,
+    buyIn: playerBankroll,
     point: null,
     shooterIndex: 0,
-    shooters: ["You", "Ava", "Marco", "Jules", "Nia"],
+    shooters: tablePlayers.map((player) => player.name),
+    players: tablePlayers,
     puck: "OFF",
     bets: [],
     rollHistory: [],
@@ -109,18 +112,22 @@ export function createInitialState(mode = "casino", startingBankroll) {
       personality: "classic",
       lastCall: "Place your bets. Dice are in the middle."
     },
-    aiPlayers: createAiPlayers(),
+    aiPlayers: tablePlayers.filter((player) => !player.human),
     ledger: []
   };
 }
 
-export function createAiPlayers() {
+export function createTablePlayers(playerBankroll, tableMin = 10) {
   return [
-    { id: "ai-ava", name: "Ava", style: "3 Point Molly", bankroll: 1800, mood: "focused" },
-    { id: "ai-marco", name: "Marco", style: "Iron Cross", bankroll: 2400, mood: "chatty" },
-    { id: "ai-jules", name: "Jules", style: "Press 6/8", bankroll: 1600, mood: "calm" },
-    { id: "ai-nia", name: "Nia", style: "Don't Pass", bankroll: 2100, mood: "sharp" }
+    { id: "player", name: "You", human: true, style: "Manual", bankroll: playerBankroll, buyIn: playerBankroll, mood: "at the rail", fieldUnit: tableMin },
+    { id: "ai-ava", name: "Ava", human: false, style: "Field nibbler", bankroll: 1800, buyIn: 1800, mood: "focused", fieldUnit: tableMin },
+    { id: "ai-marco", name: "Marco", human: false, style: "Field press", bankroll: 2200, buyIn: 2200, mood: "chatty", fieldUnit: tableMin * 2 },
+    { id: "ai-jules", name: "Jules", human: false, style: "Field steady", bankroll: 1600, buyIn: 1600, mood: "calm", fieldUnit: tableMin }
   ];
+}
+
+export function createAiPlayers() {
+  return createTablePlayers(2000).filter((player) => !player.human);
 }
 
 export function rollDice(rng = Math.random) {
@@ -132,6 +139,8 @@ export function rollDice(rng = Math.random) {
 export function placeBet(state, bet) {
   const catalog = BET_CATALOG[bet.type] ?? BET_CATALOG.proposition;
   const amount = clampToTable(Number(bet.amount), state.table.min, catalog.max);
+  const owner = bet.owner ?? "player";
+  const ownerBankroll = getOwnerBankroll(state, owner);
   if (bet.type === "odds") {
     const oddsCheck = validateOddsBet(state, bet);
     if (!oddsCheck.ok) return { state, event: { type: "rejected", message: oddsCheck.message } };
@@ -139,19 +148,19 @@ export function placeBet(state, bet) {
   if (state.table.crapless && ["dontPass", "dontCome"].includes(bet.type)) {
     return { state, event: { type: "rejected", message: "Don't bets are not offered on this Crapless Craps table." } };
   }
-  if (state.bankroll < amount) {
-    return { state, event: { type: "rejected", message: "Not enough bankroll for that bet." } };
+  if (ownerBankroll < amount) {
+    return { state, event: { type: "rejected", message: `${playerName(state, owner)} is short on chips for that bet.` } };
   }
   if (amount < catalog.min) {
     return { state, event: { type: "rejected", message: `${catalog.label} minimum is $${catalog.min}.` } };
   }
 
   const next = clone(state);
-  next.bankroll -= amount;
+  adjustOwnerBankroll(next, owner, -amount);
   next.session.totalWagered += amount;
   next.bets.push({
     id: bet.id ?? cryptoId(),
-    owner: bet.owner ?? "player",
+    owner,
     type: bet.type,
     amount,
     number: bet.number ?? null,
@@ -166,9 +175,9 @@ export function placeBet(state, bet) {
 
 export function clearWorkingBets(state) {
   const next = clone(state);
-  const removable = next.bets.filter((bet) => !bet.contract);
-  next.bankroll += removable.reduce((sum, bet) => sum + bet.amount, 0);
-  next.bets = next.bets.filter((bet) => bet.contract);
+  const removable = next.bets.filter((bet) => !bet.contract && bet.owner === "player");
+  removable.forEach((bet) => adjustOwnerBankroll(next, bet.owner, bet.amount));
+  next.bets = next.bets.filter((bet) => bet.contract || bet.owner !== "player");
   next.dealer.lastCall = "Non-contract bets are off the layout.";
   next.ledger.unshift({ kind: "clear", amount: removable.reduce((sum, bet) => sum + bet.amount, 0), label: next.dealer.lastCall, at: Date.now() });
   return next;
@@ -185,7 +194,7 @@ export function pullNumberBets(state, number) {
   const returned = pulled.reduce((sum, bet) => sum + bet.amount, 0);
   const pulledIds = new Set(pulled.map((bet) => bet.id));
   next.bets = next.bets.filter((bet) => !pulledIds.has(bet.id));
-  next.bankroll += returned;
+  pulled.forEach((bet) => adjustOwnerBankroll(next, bet.owner, bet.amount));
   next.dealer.lastCall = `Pulled down $${returned} from ${number}.`;
   next.ledger.unshift({ kind: "pull", amount: returned, label: next.dealer.lastCall, at: Date.now() });
   return { state: next, event: { type: "pulled", message: next.dealer.lastCall, returned } };
@@ -193,6 +202,17 @@ export function pullNumberBets(state, number) {
 
 export function pressNumberBet(state, number, amount) {
   return placeBet(state, { type: "place", number, amount });
+}
+
+export function placeAiFieldBet(state, ownerId) {
+  const player = state.players?.find((candidate) => candidate.id === ownerId);
+  const amount = Math.max(state.table.min, player?.fieldUnit ?? state.table.min);
+  if (!player || player.human || player.bankroll < amount) {
+    return { state, event: { type: "noAction", message: `${player?.name ?? "Player"} waits this roll.` } };
+  }
+  const existingField = state.bets.some((bet) => bet.owner === ownerId && bet.type === "field");
+  if (existingField) return { state, event: { type: "noAction", message: `${player.name} already has field action.` } };
+  return placeBet(state, { type: "field", owner: ownerId, amount });
 }
 
 export function resolveRoll(state, dice) {
@@ -296,7 +316,12 @@ export function resolveRoll(state, dice) {
   const won = payouts.reduce((sum, item) => sum + item.returned + item.profit, 0);
   const profit = payouts.reduce((sum, item) => sum + item.profit, 0);
   const lost = losses.reduce((sum, item) => sum + item.amount, 0);
-  next.bankroll += won + pushes.reduce((sum, item) => sum + item.amount, 0);
+  const playerProfit = payouts.filter((item) => item.owner === "player").reduce((sum, item) => sum + item.profit, 0);
+  const playerLost = losses.filter((item) => item.owner === "player").reduce((sum, item) => sum + item.amount, 0);
+  const callProfit = playerProfit || playerLost ? playerProfit : profit;
+  const callLost = playerProfit || playerLost ? playerLost : lost;
+  payouts.forEach((item) => adjustOwnerBankroll(next, item.owner, item.returned + item.profit));
+  pushes.forEach((item) => adjustOwnerBankroll(next, item.owner, item.amount));
   next.session.totalWon += profit;
   next.session.totalLost += lost;
   next.session.wins += payouts.length;
@@ -307,8 +332,8 @@ export function resolveRoll(state, dice) {
   next.session.streak = profit > lost ? Math.max(1, next.session.streak + 1) : lost > profit ? Math.min(-1, next.session.streak - 1) : next.session.streak;
   next.session.hotRoll = Math.max(next.session.hotRoll, next.session.streak);
   next.session.coldRoll = Math.min(next.session.coldRoll, next.session.streak);
-  next.dealer.lastCall = buildDealerCall(roll, messages, profit, lost);
-  next.ledger.unshift({ kind: profit >= lost ? "win" : "loss", amount: profit - lost, label: next.dealer.lastCall, at: Date.now() });
+  next.dealer.lastCall = buildDealerCall(roll, messages, callProfit, callLost);
+  next.ledger.unshift({ kind: callProfit >= callLost ? "win" : "loss", amount: callProfit - callLost, label: next.dealer.lastCall, at: Date.now() });
 
   return {
     state: next,
@@ -454,17 +479,17 @@ function payBet(state, bet, ratio, payouts, removeIds, vig = 0) {
   const profit = Math.max(0, rawProfit - commission);
   const staysWorking = ["passLine", "field", "place", "buy", "big", "hardways"].includes(bet.type);
   const removed = !staysWorking || ["dontPass", "come", "dontCome", "odds", "proposition", "lay"].includes(bet.type);
-  payouts.push({ id: bet.id, label: betLabel(bet), amount: bet.amount, returned: removed ? bet.amount : 0, profit, commission });
+  payouts.push({ id: bet.id, owner: bet.owner, label: betLabel(bet), amount: bet.amount, returned: removed ? bet.amount : 0, profit, commission });
   if (removed) removeIds.add(bet.id);
 }
 
 function loseBet(bet, losses, removeIds) {
-  losses.push({ id: bet.id, label: betLabel(bet), amount: bet.amount });
+  losses.push({ id: bet.id, owner: bet.owner, label: betLabel(bet), amount: bet.amount });
   removeIds.add(bet.id);
 }
 
 function pushBet(bet, pushes, removeIds) {
-  pushes.push({ id: bet.id, label: betLabel(bet), amount: bet.amount });
+  pushes.push({ id: bet.id, owner: bet.owner, label: betLabel(bet), amount: bet.amount });
   removeIds.add(bet.id);
 }
 
@@ -512,6 +537,23 @@ export function getPointNumbers(stateOrMode = "casino") {
 
 function clampToTable(amount, min, max) {
   return Math.max(min, Math.min(max, Math.round(amount || min)));
+}
+
+function getOwnerBankroll(state, owner = "player") {
+  if (owner === "player") return state.bankroll;
+  return state.players?.find((player) => player.id === owner)?.bankroll ?? 0;
+}
+
+function adjustOwnerBankroll(state, owner = "player", amount = 0) {
+  if (!state.players) state.players = createTablePlayers(state.bankroll ?? 0, state.table?.min ?? 10);
+  const player = state.players.find((candidate) => candidate.id === owner);
+  if (player) player.bankroll += amount;
+  if (owner === "player") state.bankroll += amount;
+}
+
+function playerName(state, owner = "player") {
+  if (owner === "player") return "You";
+  return state.players?.find((player) => player.id === owner)?.name ?? owner;
 }
 
 function cryptoId() {

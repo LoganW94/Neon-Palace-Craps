@@ -55,6 +55,7 @@ document.addEventListener("click", (event) => {
     return;
   }
   if (target.dataset.page) store.setUi({ page: target.dataset.page });
+  if (target.hasAttribute("data-toggle-right")) store.setUi({ rightRailCollapsed: !snapshot.ui.rightRailCollapsed });
   if (target.dataset.newGame) {
     const bankroll = Number(prompt("Starting bankroll", MODES[target.dataset.newGame]?.bankroll ?? 2000)) || undefined;
     store.newGame(target.dataset.newGame, bankroll);
@@ -205,8 +206,8 @@ function crapsTable() {
   const pass = game.bets.filter((bet) => bet.owner === "player");
   const currentBetTotal = game.bets.reduce((sum, bet) => sum + bet.amount, 0);
   return `
-    <section class="table-screen">
-      <aside class="left-rail panel">
+    <section class="table-screen ${ui.rightRailCollapsed ? "right-collapsed" : ""}">
+      <div class="table-hud panel">
         <div class="dealer">
           <div class="dealer-avatar">D</div>
           <div><span>Dealer Call</span><strong>${game.dealer.lastCall}</strong></div>
@@ -216,6 +217,43 @@ function crapsTable() {
           ${dice(game.rollHistory[0]?.die2 ?? 1)}
         </div>
         <button class="roll-button" data-roll>Roll Dice</button>
+      </div>
+      <div class="felt-wrap">
+        <div class="table-glow"></div>
+        <div class="craps-felt">
+          <div class="puck ${game.point ? "on" : ""}">${game.puck}</div>
+          <div class="layout-row points ${game.table.crapless ? "crapless-points" : ""}">
+            ${getPointNumbers(game).map((number) => betZone("place", number, number, `Place / Buy / Lay ${number}`)).join("")}
+          </div>
+          ${palaceTableLayout(game)}
+          <div class="center-rail">
+            <strong>Shooter: ${game.shooters[game.shooterIndex]}</strong>
+            <span>${game.table.crapless ? "Crapless Craps" : "Classic Craps"} • Point ${game.point ?? "off"} • ${money(game.table.min)} min • ${game.table.oddsMultiple}x odds</span>
+          </div>
+        </div>
+      </div>
+      <aside class="right-rail panel">
+        <button class="rail-toggle" data-toggle-right title="${ui.rightRailCollapsed ? "Show stats" : "Hide stats"}">${ui.rightRailCollapsed ? "Stats" : "Hide"}</button>
+        <div class="right-rail-body">
+          <div class="meter"><span>Profit / Loss</span><strong class="${game.bankroll - game.buyIn >= 0 ? "good" : "bad"}">${money(game.bankroll - game.buyIn)}</strong></div>
+          <div class="meter"><span>Current Bets</span><strong>${money(currentBetTotal)}</strong></div>
+          <div class="meter"><span>Rolls</span><strong>${game.session.rolls}</strong></div>
+          <div class="meter"><span>Hot / Cold</span><strong>${game.session.hotRoll} / ${game.session.coldRoll}</strong></div>
+          <div class="assistant-box">
+            <span>Strategy Assistant</span>
+            <p>${advice}</p>
+          </div>
+          <div class="toggle-grid">
+            <label><input type="checkbox" data-check="showProbability" ${ui.showProbability ? "checked" : ""}> Probabilities</label>
+            <label><input type="checkbox" data-check="showHouseEdge" ${ui.showHouseEdge ? "checked" : ""}> House edge</label>
+          </div>
+          ${ui.showProbability ? probabilityPanel() : ""}
+          ${ui.showHouseEdge ? houseEdgePanel() : ""}
+          <h3>Player Bets</h3>
+          <div class="bet-list">${pass.length ? pass.map(betItem).join("") : "<p>No chips working yet.</p>"}</div>
+        </div>
+      </aside>
+      <aside class="left-rail panel">
         <div class="chip-rack">
           ${[5, 10, 25, 100, 500, 1000].map((chip) => `<button class="chip chip-${chip} ${ui.selectedChip === chip ? "selected" : ""}" data-chip="${chip}">${chip}</button>`).join("")}
         </div>
@@ -232,38 +270,6 @@ function crapsTable() {
           <button data-special-bet="dontPassOdds" ${game.table.crapless ? "disabled" : ""}>Don't Odds</button>
           <button data-special-bet="dontCome" ${game.table.crapless ? "disabled" : ""}>Don't Come</button>
         </div>
-      </aside>
-      <div class="felt-wrap">
-        <div class="table-glow"></div>
-        <div class="craps-felt">
-          <div class="puck ${game.point ? "on" : ""}">${game.puck}</div>
-          <div class="layout-row points ${game.table.crapless ? "crapless-points" : ""}">
-            ${getPointNumbers(game).map((number) => betZone("place", number, number, `Place / Buy / Lay ${number}`)).join("")}
-          </div>
-          ${palaceTableLayout(game)}
-          <div class="center-rail">
-            <strong>Shooter: ${game.shooters[game.shooterIndex]}</strong>
-            <span>${game.table.crapless ? "Crapless Craps" : "Classic Craps"} • Point ${game.point ?? "off"} • ${money(game.table.min)} min • ${game.table.oddsMultiple}x odds</span>
-          </div>
-        </div>
-      </div>
-      <aside class="right-rail panel">
-        <div class="meter"><span>Profit / Loss</span><strong class="${game.bankroll - game.buyIn >= 0 ? "good" : "bad"}">${money(game.bankroll - game.buyIn)}</strong></div>
-        <div class="meter"><span>Current Bets</span><strong>${money(currentBetTotal)}</strong></div>
-        <div class="meter"><span>Rolls</span><strong>${game.session.rolls}</strong></div>
-        <div class="meter"><span>Hot / Cold</span><strong>${game.session.hotRoll} / ${game.session.coldRoll}</strong></div>
-        <div class="assistant-box">
-          <span>Strategy Assistant</span>
-          <p>${advice}</p>
-        </div>
-        <div class="toggle-grid">
-          <label><input type="checkbox" data-check="showProbability" ${ui.showProbability ? "checked" : ""}> Probabilities</label>
-          <label><input type="checkbox" data-check="showHouseEdge" ${ui.showHouseEdge ? "checked" : ""}> House edge</label>
-        </div>
-        ${ui.showProbability ? probabilityPanel() : ""}
-        ${ui.showHouseEdge ? houseEdgePanel() : ""}
-        <h3>Player Bets</h3>
-        <div class="bet-list">${pass.length ? pass.map(betItem).join("") : "<p>No chips working yet.</p>"}</div>
       </aside>
     </section>
     <section class="history-band">

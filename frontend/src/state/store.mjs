@@ -11,6 +11,7 @@ export class Store {
       music: false,
       showProbability: true,
       showHouseEdge: true,
+      rightRailCollapsed: false,
       volatility: "balanced",
       autoStrategy: "none",
       diceRolling: false,

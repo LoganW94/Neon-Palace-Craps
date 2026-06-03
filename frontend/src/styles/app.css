@@ -77,6 +77,14 @@ main { min-height: calc(100vh - 76px); }
   padding: 10px 12px;
 }
 .topbar nav button.active, .secondary:hover { border-color: var(--cyan); color: var(--cyan); }
+.topbar nav button.disabled-nav {
+  cursor: not-allowed;
+  opacity: .45;
+}
+.topbar nav button.disabled-nav:hover {
+  border-color: var(--line);
+  color: var(--text);
+}
 .bankroll-pill {
   padding: 8px 14px;
   border: 1px solid rgba(246, 202, 99, 0.5);
@@ -129,26 +137,62 @@ main { min-height: calc(100vh - 76px); }
   text-shadow: 0 0 28px rgba(72, 231, 255, 0.28), 0 0 42px rgba(255, 83, 104, 0.2);
 }
 .hero p { max-width: 660px; color: #e5f2ed; font-size: 1.08rem; line-height: 1.7; }
-.hero-actions, .mode-strip { display: flex; flex-wrap: wrap; gap: 12px; }
-.mode-strip {
-  margin-top: -92px;
-  position: relative;
-  z-index: 2;
-  padding: 0 clamp(16px, 4vw, 56px) 38px;
+.hero-actions { display: flex; flex-wrap: wrap; gap: 12px; }
+.home-menu {
+  display: grid;
+  grid-template-columns: repeat(4, minmax(150px, 1fr));
+  gap: 14px;
+  max-width: 1040px;
+  margin-top: clamp(22px, 4vw, 42px);
 }
-.mode-card, .casino-table-card, .panel, .stat-card, .chart-panel, .settings-stack, .roadmap, .blueprint, .lobby-row, .tutorial-grid article {
+.home-tile {
+  min-height: 142px;
+  display: grid;
+  align-content: end;
+  gap: 10px;
+  border: 1px solid var(--line);
+  border-radius: 8px;
+  color: var(--text);
+  background: rgba(7, 18, 17, .74);
+  padding: 18px;
+  text-align: left;
+  box-shadow: 0 20px 80px rgba(0, 0, 0, 0.32);
+  transition: 180ms ease;
+}
+.home-tile:hover {
+  transform: translateY(-3px);
+  border-color: rgba(72, 231, 255, 0.55);
+}
+.home-tile strong {
+  font-size: clamp(1.35rem, 2vw, 1.85rem);
+}
+.home-tile span {
+  color: var(--muted);
+  line-height: 1.35;
+}
+.home-tile.primary-tile {
+  color: #130d04;
+  background: linear-gradient(135deg, var(--gold), #fff1a8);
+  border-color: rgba(246, 202, 99, .85);
+}
+.home-tile.primary-tile span { color: rgba(19, 13, 4, .72); }
+.home-tile.unavailable {
+  cursor: not-allowed;
+  opacity: .58;
+  background: rgba(255,255,255,.045);
+}
+.home-tile.unavailable:hover {
+  transform: none;
+  border-color: var(--line);
+}
+.casino-table-card, .panel, .stat-card, .chart-panel, .settings-stack, .roadmap, .blueprint, .lobby-row, .tutorial-grid article {
   border: 1px solid var(--line);
   border-radius: 8px;
   background: var(--panel);
   box-shadow: 0 20px 80px rgba(0, 0, 0, 0.32);
 }
-.mode-card {
-  flex: 1 1 180px;
-  padding: 18px;
-}
-.mode-card:hover, .casino-table-card:hover { transform: translateY(-3px); border-color: rgba(72, 231, 255, 0.55); }
-.mode-card, .casino-table-card { transition: 180ms ease; }
-.mode-card span, .mode-card small { display: block; color: var(--muted); margin-top: 6px; }
+.casino-table-card:hover { transform: translateY(-3px); border-color: rgba(72, 231, 255, 0.55); }
+.casino-table-card { transition: 180ms ease; }
 
 .page-band { padding: clamp(24px, 5vw, 56px); }
 .page-band.narrow { max-width: 880px; margin: 0 auto; }
@@ -646,8 +690,9 @@ select {
   .brand { min-width: 0; }
   .bankroll-pill { align-self: flex-start; }
   .hero { min-height: 680px; }
-  .mode-strip { margin-top: 0; }
   .hero-actions button { flex: 1 1 100%; }
+  .home-menu { grid-template-columns: 1fr; }
+  .home-tile { min-height: 104px; }
   .table-screen { padding: 8px; gap: 10px; }
   .left-rail { grid-template-columns: 1fr; }
   .left-rail .dealer,

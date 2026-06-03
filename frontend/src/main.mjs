@@ -131,9 +131,10 @@ function rollWithAnimation() {
 
 function nav() {
   const items = [
-    ["table", "Craps Table"],
+    ["table", "Play"],
+    ["settings", "Settings"],
     ["stats", "Stats"],
-    ["tutorial", "Help"]
+    ["multiplayer-disabled", "Multiplayer"]
   ];
   return `
     <header class="topbar">
@@ -141,7 +142,9 @@ function nav() {
         <span class="brand-mark">NP</span>
         <span><strong>Neon Palace</strong><small>Vegas Craps Simulator</small></span>
       </button>
-      <nav>${items.map(([page, label]) => `<button class="${snapshot.ui.page === page ? "active" : ""}" data-page="${page}">${label}</button>`).join("")}</nav>
+      <nav>${items.map(([page, label]) => page === "multiplayer-disabled"
+        ? `<button class="disabled-nav" title="Multiplayer is not available yet" disabled>${label}</button>`
+        : `<button class="${snapshot.ui.page === page ? "active" : ""}" data-page="${page}">${label}</button>`).join("")}</nav>
       <div class="bankroll-pill"><span>Bankroll</span><strong>${money(snapshot.game.bankroll)}</strong></div>
     </header>
   `;
@@ -154,21 +157,26 @@ function home() {
       <div class="hero-content">
         <p class="eyebrow">Downtown energy. Strip-grade math.</p>
         <h1>Neon Palace Craps</h1>
-        <p>Roll authentic casino craps with visual chip stacks, animated dice, dealer calls, strategy tools, AI tablemates, and a backend designed for future real-time social play.</p>
-        <div class="hero-actions">
-          <button class="primary" data-new-game="casino">Play Casino Table</button>
-          <button class="secondary" data-page="tutorial">Beginner Tutorial</button>
+        <p>Roll a polished Vegas-style craps table with realistic bets, odds, dice, bankroll pressure, and casino atmosphere.</p>
+        <div class="home-menu">
+          <button class="home-tile primary-tile" data-new-game="${snapshot.ui.selectedMode}">
+            <strong>Play</strong>
+            <span>${MODES[snapshot.ui.selectedMode]?.label ?? "Casino Simulation"} • ${money(MODES[snapshot.ui.selectedMode]?.min ?? 10)} min</span>
+          </button>
+          <button class="home-tile" data-page="settings">
+            <strong>Settings</strong>
+            <span>Mode, sound, ambience, and table preferences</span>
+          </button>
+          <button class="home-tile" data-page="stats">
+            <strong>Stats</strong>
+            <span>Session results, streaks, roll history, and bankroll</span>
+          </button>
+          <button class="home-tile unavailable" disabled title="Multiplayer is not available yet">
+            <strong>Multiplayer</strong>
+            <span>Coming later</span>
+          </button>
         </div>
       </div>
-    </section>
-    <section class="mode-strip">
-      ${Object.entries(MODES).map(([key, mode]) => `
-        <article class="mode-card" data-new-game="${key}">
-          <strong>${mode.label}</strong>
-          <span>${money(mode.bankroll)} buy-in</span>
-          <small>${money(mode.min)} min / ${money(mode.max)} max</small>
-        </article>
-      `).join("")}
     </section>
   `;
 }

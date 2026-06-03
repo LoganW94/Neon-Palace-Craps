@@ -1,6 +1,6 @@
-# Neon Palace Craps
+# Neon Palace Casino
 
-Neon Palace Craps is a local Las Vegas-style craps simulator with an immersive felt table UI, animated dice, chip stacks, bankroll tracking, tutorial/help content, casino ambience, and a Node backend shaped for future multiplayer expansion.
+Neon Palace Casino is a local Vegas-inspired casino game floor with immersive craps, Jacks or Better video poker, Deuces Wild Ultimate X, blackjack with a live player guide, bankroll tracking, casino ambience, and a Node backend shaped for future multiplayer expansion.
 
 The project currently runs without third-party dependencies. If you have Node installed, you can launch it directly.
 
@@ -47,7 +47,18 @@ Double-click:
 launch.bat
 ```
 
-## Gameplay Features
+## Casino Games
+
+- Main menu reworked as a casino floor with Craps, Jacks or Better, Deuces Wild Ultimate X, Blackjack, Settings, Stats, and unavailable Multiplayer.
+- Shared chip selection across games.
+- Poker machines use credit denominations starting at 5 cents.
+- Jacks or Better and Deuces Wild Ultimate X support 1 to 10 hands per deal.
+- Card-specific sound effects for dealing, drawing, holds, wins, and losses.
+- Softer animated card entry for video poker and blackjack hands, with held poker cards pulled down slightly.
+- Neon Palace blue/gold/cyan/coral visual theme across table games and card machines.
+- Bankroll and profit/loss tracking per game surface.
+
+## Craps Features
 
 - Authentic come-out and point cycle handling
 - Pass Line, Don't Pass, Come, Don't Come
@@ -66,6 +77,33 @@ launch.bat
 - Casino sound effects and optional ambience/music
 - Practice, casino, high roller, tutorial, quick play, and crapless modes
 
+## Video Poker
+
+- Jacks or Better five-card draw.
+- Hold and draw controls.
+- 1 to 10 hand play using the same held cards.
+- Credit denominations from 5 cents upward.
+- Full-pay style paytable display.
+- Hand evaluation for royal flush, straight flush, four of a kind, full house, flush, straight, trips, two pair, and Jacks or Better.
+- Session stats for hands played, last payout, and best hand.
+
+## Deuces Wild Ultimate X
+
+- Deuces are wild.
+- Separate Ultimate X bankroll and machine screen.
+- 1 to 10 hand play with per-hand multiplier results.
+- Active multiplier applies to the current draw payout.
+- Winning hands award a multiplier for the next hand.
+- Deuces Wild paytable includes natural royal, four deuces, wild royal, five of a kind, straight flush, four of a kind, full house, flush, straight, and trips.
+
+## Blackjack
+
+- Dealer stands on soft 17.
+- Blackjack pays 3:2.
+- Hit, stand, and double controls.
+- Player guide with odds, house-edge context, and recommended plays based on current hand and dealer up-card.
+- Session tracking for wins, losses, and pushes.
+
 ## Controls
 
 - Select a chip from the rack, then click a layout area to bet.
@@ -78,8 +116,8 @@ launch.bat
 
 ```text
 backend/       Node server, API routes, event bus, lobby/profile placeholders
-frontend/      Browser UI, state store, casino sounds, responsive felt table
-shared/        Craps rules engine and TypeScript contracts
+frontend/      Browser UI, state store, casino sounds, responsive game screens
+shared/        Craps engine, card-game engine, and TypeScript contracts
 tests/         Game-engine regression tests
 docs/          Architecture notes for future React/WebSocket migration
 ```
@@ -87,7 +125,7 @@ docs/          Architecture notes for future React/WebSocket migration
 ## Test
 
 ```bash
-node tests/craps-engine.test.mjs
+npm test
 ```
 
 Useful syntax checks:
@@ -96,6 +134,7 @@ Useful syntax checks:
 node --check frontend/src/main.mjs
 node --check frontend/src/state/store.mjs
 node --check shared/craps-engine.mjs
+node --check shared/casino-games.mjs
 ```
 
 ## Configuration

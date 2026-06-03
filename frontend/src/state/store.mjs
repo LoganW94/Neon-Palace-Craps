@@ -1,4 +1,5 @@
-import { clearWorkingBets, createInitialState, placeAiFieldBet, placeBet, pressNumberBet, pullNumberBets, resolveRoll, rollDice, strategyRecommendation } from "../../../shared/craps-engine.mjs";
+import { clearWorkingBets, createInitialState, placeAiStrategyBets, placeBet, pressNumberBet, pullNumberBets, resolveRoll, rollDice, strategyRecommendation } from "../../../shared/craps-engine.mjs";
+import { blackjackPlayerAction, createBlackjackState, createUltimateXState, createVideoPokerState, dealUltimateX, dealVideoPoker, drawUltimateX, drawVideoPoker, setUltimateXHands, setVideoPokerHands, startBlackjackHand, toggleUltimateXHold, toggleVideoPokerHold } from "../../../shared/casino-games.mjs";
 
 const AI_TURN_MS = 30000;
 
@@ -8,16 +9,19 @@ export class Store {
     this.ui = {
       page: "home",
       selectedChip: 25,
+      selectedCredit: 0.25,
       selectedMode: "casino",
       sound: true,
       music: false,
       showProbability: true,
       showHouseEdge: true,
       rightRailCollapsed: false,
-      uiScale: 0.9,
+      uiScale: 0.72,
       turnEndsAt: null,
       turnSeconds: null,
       nextAiActionAt: null,
+      lastWinningNumber: null,
+      lastWinningNumberType: null,
       volatility: "balanced",
       autoStrategy: "none",
       diceRolling: false,
@@ -27,6 +31,10 @@ export class Store {
       profile: null
     };
     this.game = createInitialState("casino", 2000);
+    this.videoPoker = createVideoPokerState(1000);
+    this.ultimateX = createUltimateXState(1500);
+    this.blackjack = createBlackjackState(2000);
+    this.ensureAiFieldBets();
   }
 
   subscribe(listener) {
@@ -36,7 +44,7 @@ export class Store {
   }
 
   snapshot() {
-    return { ui: this.ui, game: this.game, advice: strategyRecommendation(this.game) };
+    return { ui: this.ui, game: this.game, videoPoker: this.videoPoker, ultimateX: this.ultimateX, blackjack: this.blackjack, advice: strategyRecommendation(this.game) };
   }
 
   setUi(patch) {
@@ -48,7 +56,94 @@ export class Store {
     this.game = createInitialState(mode, bankroll);
     this.ui = { ...this.ui, selectedMode: mode, page: "table", lastEvent: null };
     this.resetTurnClock();
+    this.ensureAiFieldBets();
     this.emit();
+  }
+
+  newVideoPoker(bankroll = this.videoPoker.bankroll || 1000) {
+    this.videoPoker = createVideoPokerState(bankroll);
+    this.ui = { ...this.ui, page: "videoPoker", lastEvent: null };
+    this.emit();
+  }
+
+  videoPokerDeal() {
+    const result = dealVideoPoker(this.videoPoker, this.ui.selectedCredit, this.videoPoker.hands);
+    this.videoPoker = result.state;
+    this.ui = { ...this.ui, lastEvent: result.event };
+    this.emit();
+    return result.event;
+  }
+
+  videoPokerHold(index) {
+    this.videoPoker = toggleVideoPokerHold(this.videoPoker, index);
+    this.emit();
+  }
+
+  videoPokerHands(hands) {
+    this.videoPoker = setVideoPokerHands(this.videoPoker, hands);
+    this.emit();
+  }
+
+  videoPokerDraw() {
+    const result = drawVideoPoker(this.videoPoker);
+    this.videoPoker = result.state;
+    this.ui = { ...this.ui, lastEvent: result.event };
+    this.emit();
+    return result.event;
+  }
+
+  newUltimateX(bankroll = this.ultimateX.bankroll || 1500) {
+    this.ultimateX = createUltimateXState(bankroll);
+    this.ui = { ...this.ui, page: "ultimateX", lastEvent: null };
+    this.emit();
+  }
+
+  ultimateXDeal() {
+    const result = dealUltimateX(this.ultimateX, this.ui.selectedCredit, this.ultimateX.hands);
+    this.ultimateX = result.state;
+    this.ui = { ...this.ui, lastEvent: result.event };
+    this.emit();
+    return result.event;
+  }
+
+  ultimateXHold(index) {
+    this.ultimateX = toggleUltimateXHold(this.ultimateX, index);
+    this.emit();
+  }
+
+  ultimateXHands(hands) {
+    this.ultimateX = setUltimateXHands(this.ultimateX, hands);
+    this.emit();
+  }
+
+  ultimateXDraw() {
+    const result = drawUltimateX(this.ultimateX);
+    this.ultimateX = result.state;
+    this.ui = { ...this.ui, lastEvent: result.event };
+    this.emit();
+    return result.event;
+  }
+
+  newBlackjack(bankroll = this.blackjack.bankroll || 2000) {
+    this.blackjack = createBlackjackState(bankroll);
+    this.ui = { ...this.ui, page: "blackjack", lastEvent: null };
+    this.emit();
+  }
+
+  blackjackDeal() {
+    const result = startBlackjackHand(this.blackjack, this.ui.selectedChip);
+    this.blackjack = result.state;
+    this.ui = { ...this.ui, lastEvent: result.event };
+    this.emit();
+    return result.event;
+  }
+
+  blackjackAction(action) {
+    const result = blackjackPlayerAction(this.blackjack, action);
+    this.blackjack = result.state;
+    this.ui = { ...this.ui, lastEvent: result.event };
+    this.emit();
+    return result.event;
   }
 
   bet(bet) {
@@ -90,10 +185,17 @@ export class Store {
       this.emit();
       return event;
     }
+    if (!this.hasPlayerLineBet()) {
+      const event = { type: "rejected", message: "Place a Pass Line or Don't Pass bet before rolling." };
+      this.ui = { ...this.ui, lastEvent: event };
+      this.emit();
+      return event;
+    }
     const result = resolveRoll(this.placeAiFieldBets(), rollDice());
     this.game = result.state;
-    this.ui = { ...this.ui, lastEvent: result.event };
+    this.ui = { ...this.ui, lastEvent: result.event, ...lastWinningNumberPatch(result.event) };
     this.resetTurnClock();
+    this.ensureAiFieldBets();
     this.emit();
     return result.event;
   }
@@ -103,8 +205,9 @@ export class Store {
     if (!shooter || shooter.human) return null;
     const rollResult = resolveRoll(this.placeAiFieldBets(), rollDice());
     this.game = rollResult.state;
-    this.ui = { ...this.ui, lastEvent: rollResult.event };
+    this.ui = { ...this.ui, lastEvent: rollResult.event, ...lastWinningNumberPatch(rollResult.event) };
     this.resetTurnClock();
+    this.ensureAiFieldBets();
     this.emit();
     return rollResult.event;
   }
@@ -147,12 +250,35 @@ export class Store {
     return bets;
   }
 
+  pressLastWin() {
+    if (!this.ui.lastWinningNumber) {
+      const event = { type: "rejected", message: "No winning number bet to press yet." };
+      this.ui = { ...this.ui, lastEvent: event };
+      this.emit();
+      return event;
+    }
+    const amount = Math.max(this.game.table.min, this.ui.selectedChip);
+    const result = placeBet(this.game, {
+      type: this.ui.lastWinningNumberType ?? "place",
+      number: this.ui.lastWinningNumber,
+      amount
+    });
+    this.game = result.state;
+    this.ui = { ...this.ui, lastEvent: result.event };
+    this.emit();
+    return result.event;
+  }
+
   currentShooter() {
     return this.game.players?.[this.game.shooterIndex] ?? { id: "player", name: this.game.shooters?.[this.game.shooterIndex] ?? "You", human: this.game.shooterIndex === 0 };
   }
 
   isHumanShooter() {
     return Boolean(this.currentShooter()?.human);
+  }
+
+  hasPlayerLineBet() {
+    return this.game.bets.some((bet) => bet.owner === "player" && ["passLine", "dontPass"].includes(bet.type));
   }
 
   resetTurnClock(now = Date.now()) {
@@ -170,14 +296,23 @@ export class Store {
     nextGame.players
       ?.filter((player) => !player.human)
       .forEach((player) => {
-        nextGame = placeAiFieldBet(nextGame, player.id).state;
+        nextGame = placeAiStrategyBets(nextGame, player.id).state;
       });
     this.game = nextGame;
     return nextGame;
+  }
+
+  ensureAiFieldBets() {
+    this.placeAiFieldBets();
   }
 
   emit() {
     const snapshot = this.snapshot();
     this.listeners.forEach((listener) => listener(snapshot));
   }
+}
+
+function lastWinningNumberPatch(event) {
+  const payout = event?.payouts?.find((item) => item.owner === "player" && ["place", "buy", "big"].includes(item.type) && item.number);
+  return payout ? { lastWinningNumber: payout.number, lastWinningNumberType: payout.type === "buy" ? "buy" : "place" } : {};
 }

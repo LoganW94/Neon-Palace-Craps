@@ -120,9 +120,9 @@ export function createInitialState(mode = "casino", startingBankroll) {
 export function createTablePlayers(playerBankroll, tableMin = 10) {
   return [
     { id: "player", name: "You", human: true, style: "Manual", bankroll: playerBankroll, buyIn: playerBankroll, mood: "at the rail", fieldUnit: tableMin },
-    { id: "ai-ava", name: "Ava", human: false, style: "Field nibbler", bankroll: 1800, buyIn: 1800, mood: "focused", fieldUnit: tableMin },
-    { id: "ai-marco", name: "Marco", human: false, style: "Field press", bankroll: 2200, buyIn: 2200, mood: "chatty", fieldUnit: tableMin * 2 },
-    { id: "ai-jules", name: "Jules", human: false, style: "Field steady", bankroll: 1600, buyIn: 1600, mood: "calm", fieldUnit: tableMin }
+    { id: "ai-ava", name: "Ava", human: false, style: "Pass/Odds + 6/8", bankroll: 1800, buyIn: 1800, mood: "focused", fieldUnit: tableMin },
+    { id: "ai-marco", name: "Marco", human: false, style: "Field + hardways", bankroll: 2200, buyIn: 2200, mood: "chatty", fieldUnit: tableMin * 2 },
+    { id: "ai-jules", name: "Jules", human: false, style: "Place 6/8", bankroll: 1600, buyIn: 1600, mood: "calm", fieldUnit: tableMin }
   ];
 }
 
@@ -212,7 +212,60 @@ export function placeAiFieldBet(state, ownerId) {
   }
   const existingField = state.bets.some((bet) => bet.owner === ownerId && bet.type === "field");
   if (existingField) return { state, event: { type: "noAction", message: `${player.name} already has field action.` } };
-  return placeBet(state, { type: "field", owner: ownerId, amount });
+  const previousCall = state.dealer.lastCall;
+  const previousLedger = state.ledger;
+  const result = placeBet(state, { type: "field", owner: ownerId, amount });
+  if (result.event.type === "betPlaced") {
+    result.state.dealer.lastCall = previousCall;
+    result.state.ledger = previousLedger;
+  }
+  return result;
+}
+
+export function placeAiStrategyBets(state, ownerId) {
+  let next = state;
+  const player = next.players?.find((candidate) => candidate.id === ownerId);
+  if (!player || player.human) return { state: next, event: { type: "noAction", message: "No AI action." } };
+  const unit = next.table.min;
+  const wants = [];
+  if (ownerId === "ai-ava") {
+    if (!next.point) wants.push({ type: "passLine", amount: unit });
+    if (next.point) wants.push({ type: "odds", number: next.point, parentType: "passLine", amount: unit });
+    if (next.point) wants.push({ type: "place", number: 6, amount: unit }, { type: "place", number: 8, amount: unit });
+  }
+  if (ownerId === "ai-marco") {
+    if (next.session.rolls % 2 === 0) wants.push({ type: "field", amount: player.fieldUnit ?? unit });
+    if (next.point) wants.push({ type: "place", number: 5, amount: unit }, { type: "place", number: 9, amount: unit });
+    if (next.point && next.session.rolls % 3 === 0) wants.push({ type: "hardways", number: "hard6", amount: 5 }, { type: "hardways", number: "hard8", amount: 5 });
+  }
+  if (ownerId === "ai-jules" && next.point) {
+    wants.push({ type: "place", number: 6, amount: unit }, { type: "place", number: 8, amount: unit });
+  }
+  wants.forEach((bet) => {
+    if (hasAiExposure(next, ownerId, bet)) return;
+    next = silentAiBet(next, { ...bet, owner: ownerId }).state;
+  });
+  return { state: next, event: { type: "aiStrategy", message: `${player.name} sets their action.` } };
+}
+
+function hasAiExposure(state, ownerId, bet) {
+  return state.bets.some((existing) => (
+    existing.owner === ownerId
+    && existing.type === bet.type
+    && `${existing.number ?? ""}` === `${bet.number ?? ""}`
+    && `${existing.parentType ?? ""}` === `${bet.parentType ?? ""}`
+  ));
+}
+
+function silentAiBet(state, bet) {
+  const previousCall = state.dealer.lastCall;
+  const previousLedger = state.ledger;
+  const result = placeBet(state, bet);
+  if (result.event.type === "betPlaced") {
+    result.state.dealer.lastCall = previousCall;
+    result.state.ledger = previousLedger;
+  }
+  return result;
 }
 
 export function resolveRoll(state, dice) {
@@ -479,7 +532,7 @@ function payBet(state, bet, ratio, payouts, removeIds, vig = 0) {
   const profit = Math.max(0, rawProfit - commission);
   const staysWorking = ["passLine", "field", "place", "buy", "big", "hardways"].includes(bet.type);
   const removed = !staysWorking || ["dontPass", "come", "dontCome", "odds", "proposition", "lay"].includes(bet.type);
-  payouts.push({ id: bet.id, owner: bet.owner, label: betLabel(bet), amount: bet.amount, returned: removed ? bet.amount : 0, profit, commission });
+  payouts.push({ id: bet.id, owner: bet.owner, type: bet.type, number: bet.number, parentType: bet.parentType, label: betLabel(bet), amount: bet.amount, returned: removed ? bet.amount : 0, profit, commission });
   if (removed) removeIds.add(bet.id);
 }
 
@@ -515,9 +568,11 @@ function chipCall(amount, label, number) {
 function validateOddsBet(state, bet) {
   const parentType = bet.parentType;
   const number = bet.number ?? state.point;
+  const owner = bet.owner ?? "player";
   if (!parentType || !number) return { ok: false, message: "Odds need an established point." };
   if (!["passLine", "dontPass", "come", "dontCome"].includes(parentType)) return { ok: false, message: "Odds need a line or come bet." };
   const hasFlatBet = state.bets.some((flatBet) => {
+    if (flatBet.owner !== owner) return false;
     if (flatBet.type !== parentType) return false;
     if (["passLine", "dontPass"].includes(parentType)) return Boolean(state.point);
     return Number(flatBet.number) === Number(number);

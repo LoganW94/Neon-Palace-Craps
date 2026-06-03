@@ -1,4 +1,5 @@
 import { BET_CATALOG, MODES, betLabel, getPointNumbers, multiplayerBlueprint } from "../../shared/craps-engine.mjs";
+import { DEUCES_WILD_ULTIMATE_X_PAYTABLE, JACKS_OR_BETTER_PAYTABLE, blackjackGuide, blackjackOddsSummary, handValue } from "../../shared/casino-games.mjs";
 import { CasinoSound } from "./services/sound.mjs";
 import { getLobbyTables, getMultiplayerBlueprint, getProfile } from "./services/api.mjs";
 import { Store } from "./state/store.mjs";
@@ -29,13 +30,17 @@ Promise.allSettled([getLobbyTables(), getProfile(), getMultiplayerBlueprint()]).
 
 function render() {
   const { ui } = snapshot;
+  const rightScroll = app.querySelector(".right-rail")?.scrollTop ?? 0;
   app.innerHTML = `
-    <div class="app-shell" data-page="${ui.page}" style="--ui-scale:${ui.uiScale ?? 0.9}">
+    <div class="app-shell" data-page="${ui.page}" style="--ui-scale:${ui.uiScale ?? 0.72}">
       ${nav()}
       <main>
         ${ui.page === "home" ? home() : ""}
         ${ui.page === "tables" ? tableSelection() : ""}
         ${ui.page === "table" ? crapsTable() : ""}
+        ${ui.page === "videoPoker" ? videoPokerGame() : ""}
+        ${ui.page === "ultimateX" ? ultimateXGame() : ""}
+        ${ui.page === "blackjack" ? blackjackGame() : ""}
         ${ui.page === "stats" ? statsDashboard() : ""}
         ${ui.page === "settings" ? settingsPage() : ""}
         ${ui.page === "tutorial" ? tutorialPage() : ""}
@@ -43,6 +48,8 @@ function render() {
       </main>
     </div>
   `;
+  const rightRail = app.querySelector(".right-rail");
+  if (rightRail) rightRail.scrollTop = rightScroll;
 }
 
 document.addEventListener("click", (event) => {
@@ -66,8 +73,68 @@ document.addEventListener("click", (event) => {
     const bankroll = Number(prompt("Starting bankroll", MODES[target.dataset.newGame]?.bankroll ?? 2000)) || undefined;
     store.newGame(target.dataset.newGame, bankroll);
   }
+  if (target.hasAttribute("data-new-video-poker")) {
+    const bankroll = Number(prompt("Video poker bankroll", snapshot.videoPoker.bankroll || 1000)) || undefined;
+    store.newVideoPoker(bankroll);
+  }
+  if (target.hasAttribute("data-new-ultimate-x")) {
+    const bankroll = Number(prompt("Ultimate X bankroll", snapshot.ultimateX.bankroll || 1500)) || undefined;
+    store.newUltimateX(bankroll);
+  }
+  if (target.hasAttribute("data-new-blackjack")) {
+    const bankroll = Number(prompt("Blackjack bankroll", snapshot.blackjack.bankroll || 2000)) || undefined;
+    store.newBlackjack(bankroll);
+  }
+  if (target.hasAttribute("data-poker-deal")) {
+    const pokerEvent = store.videoPokerDeal();
+    if (pokerEvent.type !== "rejected") sound.deal();
+    announce(pokerEvent.message);
+  }
+  if (target.hasAttribute("data-poker-hold")) {
+    store.videoPokerHold(Number(target.dataset.pokerHold));
+    sound.cardTap();
+  }
+  if (target.hasAttribute("data-poker-draw")) {
+    const pokerEvent = store.videoPokerDraw();
+    if (pokerEvent.type !== "rejected") sound.draw();
+    if (pokerEvent.payout > 0) sound.win(pokerEvent.payout > 500);
+    if (pokerEvent.payout === 0) sound.loss();
+    announce(pokerEvent.message);
+  }
+  if (target.hasAttribute("data-ultimate-x-deal")) {
+    const pokerEvent = store.ultimateXDeal();
+    if (pokerEvent.type !== "rejected") sound.deal();
+    announce(pokerEvent.message);
+  }
+  if (target.hasAttribute("data-ultimate-x-hold")) {
+    store.ultimateXHold(Number(target.dataset.ultimateXHold));
+    sound.cardTap();
+  }
+  if (target.hasAttribute("data-ultimate-x-draw")) {
+    const pokerEvent = store.ultimateXDraw();
+    if (pokerEvent.type !== "rejected") sound.draw();
+    if (pokerEvent.payout > 0) sound.win(pokerEvent.payout > 500);
+    if (pokerEvent.payout === 0) sound.loss();
+    announce(pokerEvent.message);
+  }
+  if (target.hasAttribute("data-blackjack-deal")) {
+    const blackjackEvent = store.blackjackDeal();
+    if (blackjackEvent.type !== "rejected") sound.deal();
+    announce(blackjackEvent.message);
+  }
+  if (target.dataset.blackjackAction) {
+    const blackjackEvent = store.blackjackAction(target.dataset.blackjackAction);
+    if (blackjackEvent.type !== "rejected") sound.cardTap();
+    if (blackjackEvent.outcome === "win") sound.win(blackjackEvent.payout > 500);
+    if (blackjackEvent.outcome === "loss") sound.loss();
+    announce(blackjackEvent.message);
+  }
   if (target.dataset.chip) {
     store.setUi({ selectedChip: Number(target.dataset.chip) });
+    sound.chips();
+  }
+  if (target.dataset.credit) {
+    store.setUi({ selectedCredit: Number(target.dataset.credit) });
     sound.chips();
   }
   if (target.dataset.betType) {
@@ -79,9 +146,15 @@ document.addEventListener("click", (event) => {
     if (betEvent.type === "rejected") announce(betEvent.message);
   }
   if (target.hasAttribute("data-roll")) rollWithAnimation();
+  if (target.hasAttribute("data-ready-ai")) aiRollWithAnimation();
   if (target.hasAttribute("data-auto-bet")) {
     store.autoBet();
     sound.chips();
+  }
+  if (target.hasAttribute("data-press-last-win")) {
+    const pressEvent = store.pressLastWin();
+    if (pressEvent.type === "betPlaced") sound.chips();
+    announce(pressEvent.message);
   }
   if (target.hasAttribute("data-clear-bets")) {
     const clearEvent = store.clearBets();
@@ -116,6 +189,8 @@ document.addEventListener("change", (event) => {
     const value = target.type === "range" ? Number(target.value) : target.value;
     store.setUi({ [target.dataset.ui]: value });
   }
+  if (target.matches("[data-video-poker-hands]")) store.videoPokerHands(Number(target.value));
+  if (target.matches("[data-ultimate-x-hands]")) store.ultimateXHands(Number(target.value));
   if (target.matches("[data-check]")) store.setUi({ [target.dataset.check]: target.checked });
   if (target.matches("[data-sound]")) {
     sound.toggleSound(target.checked);
@@ -135,32 +210,42 @@ document.addEventListener("input", (event) => {
 });
 
 function rollWithAnimation() {
+  if (!store.hasPlayerLineBet()) {
+    announce("Place a Pass Line or Don't Pass bet before rolling.");
+    return;
+  }
   store.setUi({ diceRolling: true });
   sound.dice();
   setTimeout(() => {
     const event = store.roll();
     store.setUi({ diceRolling: false });
-    if (event.net > 0) sound.win(event.net > 200);
-    if (event.net < 0) sound.loss();
-    if (event.net > 300) celebrate();
+    const playerNet = playerEventNet(event);
+    if (playerNet > 0) sound.win(playerNet > 200);
+    if (playerNet < 0) sound.loss();
+    if (playerNet > 300) celebrate();
   }, 760);
 }
 
 function aiRollWithAnimation() {
+  if (snapshot.ui.diceRolling) return;
   store.setUi({ diceRolling: true });
   sound.dice();
   setTimeout(() => {
     const event = store.aiTurn();
     store.setUi({ diceRolling: false });
-    if (event?.net > 0) sound.win(event.net > 200);
-    if (event?.net < 0) sound.loss();
-    if (event?.net > 300) celebrate();
+    const playerNet = playerEventNet(event);
+    if (playerNet > 0) sound.win(playerNet > 200);
+    if (playerNet < 0) sound.loss();
+    if (playerNet > 300) celebrate();
   }, 760);
 }
 
 function nav() {
   const items = [
-    ["table", "Play"],
+    ["table", "Craps"],
+    ["videoPoker", "Video Poker"],
+    ["ultimateX", "Ultimate X"],
+    ["blackjack", "Blackjack"],
     ["settings", "Settings"],
     ["stats", "Stats"],
     ["multiplayer-disabled", "Multiplayer"]
@@ -169,12 +254,12 @@ function nav() {
     <header class="topbar">
       <button class="brand" data-page="home" aria-label="Neon Palace home">
         <span class="brand-mark">NP</span>
-        <span><strong>Neon Palace</strong><small>Vegas Craps Simulator</small></span>
+        <span><strong>Neon Palace</strong><small>Casino Game Floor</small></span>
       </button>
       <nav>${items.map(([page, label]) => page === "multiplayer-disabled"
         ? `<button class="disabled-nav" title="Multiplayer is not available yet" disabled>${label}</button>`
         : `<button class="${snapshot.ui.page === page ? "active" : ""}" data-page="${page}">${label}</button>`).join("")}</nav>
-      <div class="bankroll-pill"><span>Bankroll</span><strong>${money(snapshot.game.bankroll)}</strong></div>
+      <div class="bankroll-pill"><span>Bankroll</span><strong>${activeBankrollLabel()}</strong></div>
     </header>
   `;
 }
@@ -184,21 +269,33 @@ function home() {
     <section class="hero">
       <div class="hero-backdrop"></div>
       <div class="hero-content">
-        <p class="eyebrow">Downtown energy. Strip-grade math.</p>
-        <h1>Neon Palace Craps</h1>
-        <p>Roll a polished Vegas-style craps table with realistic bets, odds, dice, bankroll pressure, and casino atmosphere.</p>
-        <div class="home-menu">
-          <button class="home-tile primary-tile" data-new-game="${snapshot.ui.selectedMode}">
-            <strong>Play</strong>
-            <span>${MODES[snapshot.ui.selectedMode]?.label ?? "Casino Simulation"} • ${money(MODES[snapshot.ui.selectedMode]?.min ?? 10)} min</span>
+        <p class="eyebrow">Neon tables. Real odds. Palace energy.</p>
+        <h1>Neon Palace Casino</h1>
+        <p>Choose a game from the floor: immersive craps, Jacks or Better video poker, or blackjack with live strategy guidance.</p>
+        <div class="home-menu casino-floor-menu">
+          <button class="home-tile primary-tile game-tile craps-tile" data-new-game="${snapshot.ui.selectedMode}">
+            <strong>Craps</strong>
+            <span>${MODES[snapshot.ui.selectedMode]?.label ?? "Casino Simulation"} • full Vegas table</span>
+          </button>
+          <button class="home-tile game-tile poker-tile" data-new-video-poker>
+            <strong>Jacks or Better</strong>
+            <span>Classic five-card draw video poker with authentic paytable math</span>
+          </button>
+          <button class="home-tile game-tile ultimate-tile" data-new-ultimate-x>
+            <strong>Deuces Wild Ultimate X</strong>
+            <span>Wild deuces, bigger swings, and earned multipliers for the next hand</span>
+          </button>
+          <button class="home-tile game-tile blackjack-tile" data-new-blackjack>
+            <strong>Blackjack</strong>
+            <span>3:2 blackjack, dealer stands soft 17, and guided recommended plays</span>
           </button>
           <button class="home-tile" data-page="settings">
             <strong>Settings</strong>
-            <span>Mode, sound, ambience, and table preferences</span>
+            <span>Sound, ambience, table preferences, and chip size</span>
           </button>
           <button class="home-tile" data-page="stats">
             <strong>Stats</strong>
-            <span>Session results, streaks, roll history, and bankroll</span>
+            <span>Craps session results, streaks, roll history, and bankroll</span>
           </button>
           <button class="home-tile unavailable" disabled title="Multiplayer is not available yet">
             <strong>Multiplayer</strong>
@@ -296,13 +393,13 @@ function crapsTable() {
           </select>
         </label>
         <label class="select-row scale-row">UI scale
-          <input type="range" min="0.72" max="1" step="0.04" value="${ui.uiScale ?? 0.9}" data-ui="uiScale">
+          <input type="range" min="0.72" max="1" step="0.04" value="${ui.uiScale ?? 0.72}" data-ui="uiScale">
         </label>
         <button class="secondary" data-auto-bet>Run Strategy</button>
+        <button class="secondary" data-press-last-win>Press Last Win</button>
         <button class="secondary clear-button" data-clear-bets>Clear Removable Bets</button>
         <button class="secondary ambience-button ${ui.music ? "active" : ""}" data-table-music>${ui.music ? "Ambience On" : "Start Ambience"}</button>
         <div class="quick-bets">
-          <button data-special-bet="passOdds">Pass Odds</button>
           <button data-special-bet="dontPassOdds" ${game.table.crapless ? "disabled" : ""}>Don't Odds</button>
           <button data-special-bet="dontCome" ${game.table.crapless ? "disabled" : ""}>Don't Come</button>
         </div>
@@ -317,19 +414,297 @@ function crapsTable() {
 
 function betSlip(playerBetTotal, shooter) {
   const { game, ui } = snapshot;
-  const passOdds = game.bets
-    .filter((bet) => bet.owner === "player" && bet.type === "odds" && bet.parentType === "passLine")
-    .reduce((sum, bet) => sum + bet.amount, 0);
   const lastNet = playerEventNet(ui.lastEvent);
   return `
     <div class="bet-slip">
       <div><span>Shooter</span><strong>${shooter.name}</strong></div>
-      <div><span>Turn</span><strong>${shooter.human ? "Manual" : `${ui.turnSeconds ?? 0}s`}</strong></div>
+      <div><span>Turn</span>${shooter.human ? `<strong>Manual</strong>` : `<button class="slip-action ready-action" data-ready-ai>${ui.turnSeconds ?? 0}s Ready</button>`}</div>
       <div><span>Your bets</span><strong>${money(playerBetTotal)}</strong></div>
-      <div><span>Pass odds</span><button class="slip-action" data-special-bet="passOdds" ${game.point ? "" : "disabled"}>${money(passOdds)} +</button></div>
       <div><span>Last roll</span><strong class="${lastNet >= 0 ? "good" : "bad"}">${money(lastNet)}</strong></div>
     </div>
   `;
+}
+
+function videoPokerGame() {
+  const poker = snapshot.videoPoker;
+  const net = poker.bankroll - poker.buyIn;
+  const totalWager = poker.wager * poker.hands;
+  return `
+    <section class="card-game-screen video-poker-screen">
+      <div class="card-game-hero">
+        <div>
+          <p class="eyebrow">Video Poker</p>
+          <h2>Jacks or Better</h2>
+          <p>Hold your best cards, draw once, and chase the Palace paytable.</p>
+        </div>
+        <div class="game-bankroll">
+          <span>Credits</span>
+          <strong>${credits(poker.bankroll)}</strong>
+          <em class="${net >= 0 ? "good" : "bad"}">${credits(net)}</em>
+        </div>
+      </div>
+      <div class="card-game-layout">
+        <section class="machine-panel video-machine">
+          <div class="machine-display">
+            <strong>${poker.result}</strong>
+            <span>${poker.hands} hand${poker.hands === 1 ? "" : "s"} • Bet ${credits(poker.wager)} each / ${credits(totalWager)} total • Last payout ${credits(poker.lastPayout)}</span>
+          </div>
+          <div class="poker-hand">
+            ${renderPokerCards(poker)}
+          </div>
+          ${renderPokerResults(poker)}
+          <div class="machine-controls">
+            ${creditRack()}
+            <label class="hands-control">Hands
+              <select data-video-poker-hands ${poker.status === "dealt" ? "disabled" : ""}>
+                ${options(Object.fromEntries(Array.from({ length: 10 }, (_, index) => [index + 1, `${index + 1}`])), poker.hands)}
+              </select>
+            </label>
+            <button class="primary" data-poker-deal ${poker.status === "dealt" ? "disabled" : ""}>Deal</button>
+            <button class="primary draw-button" data-poker-draw ${poker.status === "dealt" ? "" : "disabled"}>Draw</button>
+            <button class="secondary" data-new-video-poker>New Credits</button>
+          </div>
+        </section>
+        <aside class="guide-panel">
+          <h3>Jacks or Better Paytable</h3>
+          <div class="paytable">
+            ${JACKS_OR_BETTER_PAYTABLE.map(([name, multiplier]) => `<span>${name}</span><strong>${multiplier} to 1</strong>`).join("")}
+          </div>
+          <div class="mini-panel">
+            <strong>Quick Guide</strong>
+            <span>Keep any paying pair or better.</span>
+            <span>Four to a royal usually beats a low pair.</span>
+            <span>Three to a royal beats most unsuited high-card holds.</span>
+            <span>Never chase inside straights over made high pairs.</span>
+          </div>
+          <div class="mini-panel">
+            <strong>Session</strong>
+            <span>Hands played: ${poker.handsPlayed}</span>
+            <span>Best hand: ${poker.bestHand?.name ?? "None yet"}</span>
+            <span>Current hands: ${poker.hands}</span>
+            <span>Expected return: about 99.54% with full-pay optimal play</span>
+          </div>
+        </aside>
+      </div>
+    </section>
+  `;
+}
+
+function ultimateXGame() {
+  const poker = snapshot.ultimateX;
+  const net = poker.bankroll - poker.buyIn;
+  const totalWager = poker.wager * poker.hands;
+  const activeTop = Math.max(...(poker.activeMultipliers ?? [poker.activeMultiplier ?? 1]));
+  const nextTop = Math.max(...(poker.nextMultipliers ?? [poker.nextMultiplier ?? 1]));
+  return `
+    <section class="card-game-screen video-poker-screen ultimate-x-screen">
+      <div class="card-game-hero ultimate-hero">
+        <div>
+          <p class="eyebrow">Video Poker</p>
+          <h2>Deuces Wild Ultimate X</h2>
+          <p>Deuces are wild. Winning hands award multipliers for the next deal.</p>
+        </div>
+        <div class="game-bankroll">
+          <span>Credits</span>
+          <strong>${credits(poker.bankroll)}</strong>
+          <em class="${net >= 0 ? "good" : "bad"}">${credits(net)}</em>
+        </div>
+      </div>
+      <div class="card-game-layout">
+        <section class="machine-panel video-machine ultimate-machine">
+          <div class="machine-display multiplier-display">
+            <strong>${poker.result}</strong>
+            <span>${poker.hands} hand${poker.hands === 1 ? "" : "s"} • Bet ${credits(poker.wager)} each / ${credits(totalWager)} total • Last payout ${credits(poker.lastPayout)}</span>
+            <div class="multiplier-strip">
+              <b>Top Active ${activeTop}x</b>
+              <b>Top Next ${nextTop}x</b>
+            </div>
+          </div>
+          <div class="poker-hand animated-hand">
+            ${renderUltimateXCards(poker)}
+          </div>
+          ${renderPokerResults(poker, true)}
+          <div class="machine-controls">
+            ${creditRack()}
+            <label class="hands-control">Hands
+              <select data-ultimate-x-hands ${poker.status === "dealt" ? "disabled" : ""}>
+                ${options(Object.fromEntries(Array.from({ length: 10 }, (_, index) => [index + 1, `${index + 1}`])), poker.hands)}
+              </select>
+            </label>
+            <button class="primary" data-ultimate-x-deal ${poker.status === "dealt" ? "disabled" : ""}>Deal</button>
+            <button class="primary draw-button" data-ultimate-x-draw ${poker.status === "dealt" ? "" : "disabled"}>Draw</button>
+            <button class="secondary" data-new-ultimate-x>New Credits</button>
+          </div>
+        </section>
+        <aside class="guide-panel ultimate-guide">
+          <h3>Deuces Wild Paytable</h3>
+          <div class="paytable">
+            ${DEUCES_WILD_ULTIMATE_X_PAYTABLE.map(([name, multiplier]) => `<span>${name}</span><strong>${multiplier} to 1</strong>`).join("")}
+          </div>
+          <div class="mini-panel">
+            <strong>Ultimate X</strong>
+            <span>Winning hands earn a multiplier for the next hand.</span>
+            <span>The multiplier applies to the next draw payout.</span>
+            <span>No win resets the next hand to 1x.</span>
+          </div>
+          <div class="mini-panel">
+            <strong>Deuces Guide</strong>
+            <span>Never discard a deuce.</span>
+            <span>Four deuces is the signature jackpot hand.</span>
+            <span>Wild royal and five of a kind are premium chase spots.</span>
+            <span>Variance is higher than Jacks or Better.</span>
+          </div>
+          <div class="mini-panel">
+            <strong>Session</strong>
+            <span>Hands played: ${poker.handsPlayed}</span>
+            <span>Best hand: ${poker.bestHand?.name ?? "None yet"}</span>
+            <span>Current hands: ${poker.hands}</span>
+            <span>Top next multiplier: ${nextTop}x</span>
+          </div>
+        </aside>
+      </div>
+    </section>
+  `;
+}
+
+function blackjackGame() {
+  const blackjack = snapshot.blackjack;
+  const playerValue = handValue(blackjack.player);
+  const dealerUp = blackjack.dealer[0];
+  const dealerValue = blackjack.status === "player" && blackjack.dealer.length ? handValue([dealerUp]) : handValue(blackjack.dealer);
+  const net = blackjack.bankroll - blackjack.buyIn;
+  const canDouble = blackjack.status === "player" && blackjack.player.length === 2 && blackjack.bankroll >= blackjack.wager;
+  return `
+    <section class="card-game-screen blackjack-screen">
+      <div class="card-game-hero">
+        <div>
+          <p class="eyebrow">Table Game</p>
+          <h2>Blackjack</h2>
+          <p>3:2 blackjack, dealer stands on soft 17, with a live player guide.</p>
+        </div>
+        <div class="game-bankroll">
+          <span>Bankroll</span>
+          <strong>${money(blackjack.bankroll)}</strong>
+          <em class="${net >= 0 ? "good" : "bad"}">${money(net)}</em>
+        </div>
+      </div>
+      <div class="card-game-layout blackjack-layout">
+        <section class="blackjack-table">
+          <div class="dealer-hand">
+            <div class="hand-label"><span>Dealer</span><strong>${blackjack.dealer.length ? dealerValue.total : "-"}</strong></div>
+            <div class="card-row">${renderBlackjackCards(blackjack.dealer, blackjack.status === "player")}</div>
+          </div>
+          <div class="blackjack-felt-mark">
+            <strong>BLACKJACK PAYS 3 TO 2</strong>
+            <span>Dealer stands on soft 17</span>
+          </div>
+          <div class="player-hand">
+            <div class="hand-label"><span>Your Hand</span><strong>${blackjack.player.length ? playerValue.total : "-"}</strong></div>
+            <div class="card-row">${renderBlackjackCards(blackjack.player)}</div>
+          </div>
+          <div class="machine-display blackjack-callout">
+            <strong>${blackjack.message}</strong>
+            <span>Wager ${money(blackjack.wager)} • ${blackjack.handsPlayed} hands</span>
+          </div>
+          <div class="machine-controls blackjack-controls">
+            <div class="chip-rack compact-rack">
+              ${[5, 10, 25, 100, 500].map((chip) => `<button class="chip chip-${chip} ${snapshot.ui.selectedChip === chip ? "selected" : ""}" data-chip="${chip}">${chip}</button>`).join("")}
+            </div>
+            <button class="primary" data-blackjack-deal ${blackjack.status === "player" ? "disabled" : ""}>Deal</button>
+            <button class="secondary" data-blackjack-action="hit" ${blackjack.status === "player" ? "" : "disabled"}>Hit</button>
+            <button class="secondary" data-blackjack-action="stand" ${blackjack.status === "player" ? "" : "disabled"}>Stand</button>
+            <button class="secondary" data-blackjack-action="double" ${canDouble ? "" : "disabled"}>Double</button>
+            <button class="secondary" data-new-blackjack>New Bankroll</button>
+          </div>
+        </section>
+        <aside class="guide-panel">
+          <h3>Player Guide</h3>
+          <div class="strategy-card">
+            <span>Recommended Play</span>
+            <strong>${blackjackGuide(blackjack.player, dealerUp, canDouble)}</strong>
+          </div>
+          <div class="paytable blackjack-odds">
+            ${blackjackOddsSummary().map(([name, value]) => `<span>${name}</span><strong>${value}</strong>`).join("")}
+          </div>
+          <div class="mini-panel">
+            <strong>Basic Strategy Notes</strong>
+            <span>Stand more often when dealer shows 2 through 6.</span>
+            <span>Hit stiff hands against 7 through Ace.</span>
+            <span>Double 10 or 11 when the dealer card is vulnerable.</span>
+            <span>Splits and insurance are planned for the next blackjack expansion.</span>
+          </div>
+          <div class="mini-panel">
+            <strong>Session</strong>
+            <span>Wins: ${blackjack.wins}</span>
+            <span>Losses: ${blackjack.losses}</span>
+            <span>Pushes: ${blackjack.pushes}</span>
+          </div>
+        </aside>
+      </div>
+    </section>
+  `;
+}
+
+function renderPokerCards(poker) {
+  if (!poker.hand.length) return Array.from({ length: 5 }, () => `<div class="playing-card card-back"><span>NP</span></div>`).join("");
+  return poker.hand.map((card, index) => `
+    <button class="playing-card animated-card ${card.suit} ${poker.held[index] ? "held" : ""}" style="--card-i:${index}" data-poker-hold="${index}" ${poker.status === "dealt" ? "" : "disabled"}>
+      <span>${card.rank}</span>
+      <b>${suitSymbol(card.suit)}</b>
+      <em>${poker.held[index] ? "HELD" : "HOLD"}</em>
+    </button>
+  `).join("");
+}
+
+function renderUltimateXCards(poker) {
+  if (!poker.hand.length) return Array.from({ length: 5 }, (_, index) => `<div class="playing-card card-back animated-card" style="--card-i:${index}"><span>UX</span></div>`).join("");
+  return poker.hand.map((card, index) => `
+    <button class="playing-card animated-card ultimate-card ${card.suit} ${card.rank === "2" ? "wild-deuce" : ""} ${poker.held[index] ? "held" : ""}" style="--card-i:${index}" data-ultimate-x-hold="${index}" ${poker.status === "dealt" ? "" : "disabled"}>
+      <span>${card.rank}</span>
+      <b>${suitSymbol(card.suit)}</b>
+      <em>${card.rank === "2" ? "WILD" : poker.held[index] ? "HELD" : "HOLD"}</em>
+    </button>
+  `).join("");
+}
+
+function renderPokerResults(poker, showMultipliers = false) {
+  if (!poker.finalHands?.length) return "";
+  return `
+    <div class="multi-hand-results">
+      ${poker.finalHands.map((hand, index) => {
+        const result = poker.results?.[index] ?? { name: "No Win", multiplier: 0 };
+        const multiplier = showMultipliers ? poker.activeMultipliers?.[index] ?? 1 : 1;
+        const payout = poker.wager * result.multiplier * multiplier;
+        return `
+          <article class="multi-hand-row ${result.multiplier > 0 ? "winner" : ""}">
+            <div class="mini-card-row">${hand.map((card) => `<span class="mini-card ${card.suit} ${card.rank === "2" && showMultipliers ? "wild" : ""}">${card.rank}${suitSymbol(card.suit)}</span>`).join("")}</div>
+            <strong>${index + 1}. ${result.name}</strong>
+            <em>${showMultipliers ? `${multiplier}x • ` : ""}${credits(payout)}</em>
+          </article>
+        `;
+      }).join("")}
+    </div>
+  `;
+}
+
+function renderBlackjackCards(cards, hideHole = false) {
+  if (!cards.length) return `<div class="playing-card card-back"><span>NP</span></div><div class="playing-card card-back"><span>NP</span></div>`;
+  return cards.map((card, index) => hideHole && index === 1
+    ? `<div class="playing-card card-back animated-card" style="--card-i:${index}"><span>NP</span></div>`
+    : `<div class="playing-card animated-card ${card.suit}" style="--card-i:${index}"><span>${card.rank}</span><b>${suitSymbol(card.suit)}</b></div>`).join("");
+}
+
+function creditRack() {
+  const credits = [0.05, 0.1, 0.25, 0.5, 1, 5];
+  return `
+    <div class="credit-rack">
+      ${credits.map((credit) => `<button class="credit-button ${snapshot.ui.selectedCredit === credit ? "selected" : ""}" data-credit="${credit}">${creditLabel(credit)}</button>`).join("")}
+    </div>
+  `;
+}
+
+function suitSymbol(suit) {
+  return { spades: "♠", hearts: "♥", diamonds: "♦", clubs: "♣" }[suit] ?? "";
 }
 
 function playerEventNet(event) {
@@ -351,7 +726,7 @@ function leaderboard() {
     <div class="leaderboard mini-panel">
       <strong>Table Leaderboard</strong>
       ${sorted.map((player, index) => `
-        <div class="${player.human ? "you" : ""}">
+        <div class="${player.human ? "you" : ""} owner-row owner-${player.id}">
           <span>${index + 1}. ${player.name}</span>
           <b>${money(player.bankroll)}</b>
         </div>
@@ -414,25 +789,40 @@ function centerIsland() {
 function betZone(type, number, label, title, options = {}) {
   const showStacks = options.showStacks !== false;
   const isNumberBox = type === "place" && number !== "";
-  const bets = isNumberBox
-    ? snapshot.game.bets.filter((bet) => ["place", "buy", "lay", "come", "dontCome", "odds"].includes(bet.type) && `${bet.number ?? ""}` === `${number}`)
-    : snapshot.game.bets.filter((bet) => bet.type === type && `${bet.number ?? ""}` === `${number ?? ""}`);
+  const bets = betsForZone(type, number, isNumberBox);
+  const buyBets = isNumberBox ? bets.filter((bet) => bet.type === "buy" && bet.owner === "player") : [];
+  const layoutBets = isNumberBox ? bets.filter((bet) => !(bet.type === "buy" && bet.owner === "player")) : bets;
+  const passOdds = type === "passLine" ? snapshot.game.bets.filter((bet) => bet.owner === "player" && bet.type === "odds" && bet.parentType === "passLine") : [];
   const isPoint = isNumberBox && snapshot.game.point === number;
-  const chips = chipBreakdown(bets.reduce((sum, bet) => sum + bet.amount, 0));
-  const codes = [...new Set(bets.map(chipCode).filter(Boolean))].join(" ");
+  const codes = [...new Set(layoutBets.map(chipCode).filter(Boolean))].join(" ");
   return `
     <div class="bet-zone ${type} ${isPoint ? "point-active" : ""}" data-bet-type="${type}" data-bet-number="${number ?? ""}" title="${title}" role="button" tabindex="0">
       ${isPoint ? `<em class="point-marker">ON</em>` : ""}
       <span>${label}</span>
-      ${isNumberBox ? `<div class="number-controls"><button data-number-action="press" data-number="${number}">Press</button><button data-number-action="pull" data-number="${number}">Pull</button><button data-number-action="buy" data-number="${number}">Buy</button><button data-number-action="lay" data-number="${number}">Lay</button></div>` : ""}
-      ${showStacks ? `<div class="stack">${chips.map((chip, index) => `<i class="bet-chip chipv-${chip}" style="--stack:${index}">${chip}</i>`).join("")}${codes ? `<b>${codes}</b>` : ""}</div>` : ""}
+      ${type === "passLine" ? `<div class="pass-odds-area"><button class="odds-lane pass-odds-lane" data-special-bet="passOdds" ${snapshot.game.point ? "" : "disabled"}>ODDS ${money(passOdds.reduce((sum, bet) => sum + bet.amount, 0))}</button>${renderBetStack(passOdds, "", "odds-stack")}</div>` : ""}
+      ${isNumberBox ? `<button class="buy-lane" data-number-action="buy" data-number="${number}">BUY ${buyBets.reduce((sum, bet) => sum + bet.amount, 0) ? money(buyBets.reduce((sum, bet) => sum + bet.amount, 0)) : ""}</button><div class="number-controls"><button data-number-action="pull" data-number="${number}">Pull</button><button data-number-action="lay" data-number="${number}">Lay</button></div>` : ""}
+      ${showStacks ? renderBetStack(layoutBets, codes) : ""}
+      ${isNumberBox && showStacks ? renderBetStack(buyBets, "", "buy-stack") : ""}
     </div>
   `;
 }
 
+function betsForZone(type, number, isNumberBox) {
+  if (isNumberBox) {
+    return snapshot.game.bets.filter((bet) => {
+      if (!["place", "buy", "lay", "come", "dontCome", "odds"].includes(bet.type)) return false;
+      if (`${bet.number ?? ""}` !== `${number}`) return false;
+      return !(bet.type === "odds" && ["passLine", "dontPass"].includes(bet.parentType));
+    });
+  }
+  if (type === "passLine") {
+    return snapshot.game.bets.filter((bet) => bet.type === "passLine");
+  }
+  return snapshot.game.bets.filter((bet) => bet.type === type && `${bet.number ?? ""}` === `${number ?? ""}`);
+}
+
 function fieldZone(side = "", showStacks = true) {
   const bets = snapshot.game.bets.filter((bet) => bet.type === "field");
-  const chips = chipBreakdown(bets.reduce((sum, bet) => sum + bet.amount, 0));
   return `
     <div class="bet-zone field field-real field-${side}" data-bet-type="field" data-bet-number="" title="Field" role="button" tabindex="0">
       <span class="field-title">FIELD</span>
@@ -446,7 +836,7 @@ function fieldZone(side = "", showStacks = true) {
         <strong>12</strong>
       </div>
       <div class="field-note"><b>2 & 12 pay double</b><em>One roll</em></div>
-      ${showStacks ? `<div class="stack">${chips.map((chip, index) => `<i class="bet-chip chipv-${chip}" style="--stack:${index}">${chip}</i>`).join("")}</div>` : ""}
+      ${showStacks ? renderBetStack(bets) : ""}
     </div>
   `;
 }
@@ -455,16 +845,21 @@ function chipCode(bet) {
   return { come: "C", dontCome: "DC", odds: "O", buy: "B", lay: "L", place: "P", big: "BIG" }[bet.type] ?? "";
 }
 
-function chipBreakdown(total) {
-  const chips = [];
-  let remaining = total;
-  [1000, 500, 100, 25, 10, 5].forEach((value) => {
-    while (remaining >= value) {
-      chips.push(value);
-      remaining -= value;
-    }
-  });
-  return chips.slice(0, 7);
+function renderBetStack(bets, codes = "", extraClass = "") {
+  const stacks = aggregateBetsByOwner(bets);
+  if (!stacks.length) return `<div class="stack ${extraClass} empty"></div>`;
+  return `
+    <div class="stack ${extraClass}">
+      ${stacks.map((stack) => `<i class="bet-chip owner-${stack.owner} corner-${stack.owner}">${money(stack.amount)}</i>`).join("")}
+      ${codes ? `<b>${codes}</b>` : ""}
+    </div>
+  `;
+}
+
+function aggregateBetsByOwner(bets) {
+  const totals = new Map();
+  bets.forEach((bet) => totals.set(bet.owner, (totals.get(bet.owner) ?? 0) + bet.amount));
+  return [...totals.entries()].map(([owner, amount]) => ({ owner, amount }));
 }
 
 function dice(value) {
@@ -597,7 +992,7 @@ function celebrate() {
 }
 
 function options(map, selected) {
-  return Object.entries(map).map(([value, label]) => `<option value="${value}" ${value === selected ? "selected" : ""}>${label}</option>`).join("");
+  return Object.entries(map).map(([value, label]) => `<option value="${value}" ${String(value) === String(selected) ? "selected" : ""}>${label}</option>`).join("");
 }
 
 function modeText(key) {
@@ -623,6 +1018,25 @@ function propLabel(key) {
   return { any7: "ANY 7", anyCraps: "ANY CRAPS", yo: "YO 11", aces: "ACES", boxcars: "BOXCARS" }[key] ?? key;
 }
 
+function activeBankroll() {
+  if (snapshot.ui.page === "videoPoker") return snapshot.videoPoker.bankroll;
+  if (snapshot.ui.page === "ultimateX") return snapshot.ultimateX.bankroll;
+  if (snapshot.ui.page === "blackjack") return snapshot.blackjack.bankroll;
+  return snapshot.game.bankroll;
+}
+
+function activeBankrollLabel() {
+  return ["videoPoker", "ultimateX"].includes(snapshot.ui.page) ? credits(activeBankroll()) : money(activeBankroll());
+}
+
 function money(value) {
   return new Intl.NumberFormat("en-US", { style: "currency", currency: "USD", maximumFractionDigits: 0 }).format(value);
+}
+
+function credits(value) {
+  return new Intl.NumberFormat("en-US", { style: "currency", currency: "USD", minimumFractionDigits: 2, maximumFractionDigits: 2 }).format(value);
+}
+
+function creditLabel(value) {
+  return value < 1 ? `${Math.round(value * 100)}¢` : credits(value);
 }

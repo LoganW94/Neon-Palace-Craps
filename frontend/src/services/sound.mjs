@@ -33,6 +33,23 @@ export class CasinoSound {
     setTimeout(() => this.tone(880, 0.04, "triangle", 0.04), 55);
   }
 
+  deal() {
+    this.noiseBurst(0.045, 1800, 0.035);
+    [520, 560, 600, 640, 680].forEach((freq, index) => {
+      setTimeout(() => this.tone(freq, 0.025, "triangle", 0.025), index * 42);
+    });
+  }
+
+  draw() {
+    this.noiseBurst(0.07, 2200, 0.045);
+    setTimeout(() => this.tone(740, 0.045, "square", 0.025), 55);
+  }
+
+  cardTap() {
+    this.tone(420, 0.035, "triangle", 0.032);
+    setTimeout(() => this.tone(760, 0.025, "sine", 0.018), 35);
+  }
+
   win(big = false) {
     [523, 659, 784, big ? 1046 : 880].forEach((freq, index) => {
       setTimeout(() => this.tone(freq, 0.09, "sine", 0.075), index * 85);

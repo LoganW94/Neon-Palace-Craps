@@ -149,10 +149,10 @@ export function placeBet(state, bet) {
     return { state, event: { type: "rejected", message: "Don't bets are not offered on this Crapless Craps table." } };
   }
   if (ownerBankroll < amount) {
-    return { state, event: { type: "rejected", message: `${playerName(state, owner)} is short on chips for that bet.` } };
+    return { state, event: { type: "rejected", message: `${playerName(state, owner)} is short on credits for that bet.` } };
   }
   if (amount < catalog.min) {
-    return { state, event: { type: "rejected", message: `${catalog.label} minimum is $${catalog.min}.` } };
+    return { state, event: { type: "rejected", message: `${catalog.label} minimum is ${catalog.min} credits.` } };
   }
 
   const next = clone(state);
@@ -195,7 +195,7 @@ export function pullNumberBets(state, number) {
   const pulledIds = new Set(pulled.map((bet) => bet.id));
   next.bets = next.bets.filter((bet) => !pulledIds.has(bet.id));
   pulled.forEach((bet) => adjustOwnerBankroll(next, bet.owner, bet.amount));
-  next.dealer.lastCall = `Pulled down $${returned} from ${number}.`;
+  next.dealer.lastCall = `Pulled down ${returned} credits from ${number}.`;
   next.ledger.unshift({ kind: "pull", amount: returned, label: next.dealer.lastCall, at: Date.now() });
   return { state: next, event: { type: "pulled", message: next.dealer.lastCall, returned } };
 }
@@ -549,6 +549,7 @@ function pushBet(bet, pushes, removeIds) {
 function propositionWin(number, roll) {
   if (number === "any7" && roll.total === 7) return [4, 1];
   if (number === "anyCraps" && [2, 3, 12].includes(roll.total)) return [7, 1];
+  if (number === "centerAction" && [2, 3, 11, 12].includes(roll.total)) return [7, 1];
   if (number === "yo" && roll.total === 11) return [15, 1];
   if (number === "aces" && roll.die1 === 1 && roll.die2 === 1) return [30, 1];
   if (number === "boxcars" && roll.die1 === 6 && roll.die2 === 6) return [30, 1];
@@ -557,12 +558,12 @@ function propositionWin(number, roll) {
 
 function buildDealerCall(roll, messages, profit, lost) {
   const face = roll.hard && [4, 6, 8, 10].includes(roll.total) ? `Hard ${roll.total}` : `${roll.total}`;
-  const money = profit > lost ? ` Paid $${profit}.` : lost > profit ? ` Down $${lost}.` : "";
-  return `${face}. ${messages[messages.length - 1] ?? "No roll."}${money}`;
+  const creditCall = profit > lost ? ` Paid ${profit} credits.` : lost > profit ? ` Down ${lost} credits.` : "";
+  return `${face}. ${messages[messages.length - 1] ?? "No roll."}${creditCall}`;
 }
 
 function chipCall(amount, label, number) {
-  return `$${amount} ${label}${number ? ` on ${number}` : ""}.`;
+  return `${amount} credits ${label}${number ? ` on ${number}` : ""}.`;
 }
 
 function validateOddsBet(state, bet) {

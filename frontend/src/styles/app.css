@@ -237,25 +237,64 @@ main { min-height: calc(100vh - 76px); }
 .card-stats { display: flex; flex-wrap: wrap; gap: 8px; margin: 16px 0; }
 .card-stats span, .blueprint code { border: 1px solid var(--line); border-radius: 8px; padding: 6px 8px; color: var(--muted); }
 
-.table-screen {
-  display: grid;
-  grid-template-columns: minmax(0, 1fr) clamp(220px, 20vw, 300px);
-  grid-template-areas:
-    "hud right"
-    "table right"
-    "left right";
-  gap: clamp(8px, 1vw, 14px);
+.game-dock-shell {
   width: min(100%, 1680px);
   margin: 0 auto;
   padding: clamp(8px, 1vw, 14px);
 }
-.table-screen.right-collapsed {
-  grid-template-columns: minmax(0, 1fr) 58px;
+.dock-zone {
+  display: grid;
+  gap: clamp(8px, 1vw, 12px);
 }
-.table-hud { grid-area: hud; }
-.left-rail { grid-area: left; }
-.felt-wrap { grid-area: table; }
-.right-rail { grid-area: right; }
+.dock-zone.empty {
+  display: none;
+}
+.dock-top,
+.dock-bottom {
+  grid-template-columns: repeat(auto-fit, minmax(min(360px, 100%), 1fr));
+  align-items: start;
+  margin: 0 0 clamp(8px, 1vw, 12px);
+}
+.dock-bottom {
+  margin: clamp(8px, 1vw, 12px) 0 0;
+}
+.dock-middle {
+  display: grid;
+  grid-template-columns: auto minmax(0, 1fr) auto;
+  gap: clamp(8px, 1vw, 14px);
+  align-items: start;
+}
+.dock-left,
+.dock-right {
+  width: clamp(220px, 18vw, 320px);
+}
+.game-center {
+  min-width: 0;
+}
+.dock-left .table-hud,
+.dock-right .table-hud,
+.dock-left .left-rail,
+.dock-right .left-rail {
+  grid-template-columns: 1fr;
+}
+.dock-left .chip-rack,
+.dock-right .chip-rack {
+  grid-template-columns: repeat(3, minmax(42px, 1fr));
+}
+.dock-left .bet-slip,
+.dock-right .bet-slip {
+  grid-template-columns: 1fr 1fr;
+}
+.dock-left .dice-stage,
+.dock-right .dice-stage {
+  justify-content: flex-start;
+}
+.right-rail.collapsed {
+  width: auto;
+}
+.right-rail.collapsed .right-rail-body {
+  display: none;
+}
 .panel { padding: clamp(10px, 1vw, 16px); align-self: start; }
 .table-hud {
   display: grid;
@@ -374,22 +413,7 @@ main { min-height: calc(100vh - 76px); }
   text-overflow: ellipsis;
   white-space: nowrap;
 }
-.slip-action {
-  width: 100%;
-  margin-top: 1px;
-  border: 1px solid rgba(255, 213, 90, .35);
-  border-radius: 6px;
-  color: var(--gold);
-  background: rgba(255, 213, 90, .08);
-  padding: 2px 5px;
-  font-weight: 900;
-  text-align: left;
-}
-.slip-action:disabled {
-  cursor: not-allowed;
-  opacity: .5;
-}
-.scale-row input {
+.settings-stack input[type="range"] {
   width: 100%;
   accent-color: var(--gold);
 }
@@ -406,8 +430,7 @@ select {
   position: relative;
   min-height: clamp(430px, 46vw, 640px);
   min-width: 0;
-  overflow-x: auto;
-  scrollbar-color: rgba(255, 213, 90, .65) rgba(3, 12, 36, .55);
+  overflow: visible;
 }
 .table-glow {
   position: absolute;
@@ -417,6 +440,8 @@ select {
 }
 .craps-felt {
   position: relative;
+  width: 100%;
+  min-width: 0;
   min-height: clamp(430px, 46vw, 640px);
   padding: clamp(34px, 3vw, 52px) clamp(10px, 1.3vw, 22px) clamp(14px, 1.5vw, 24px);
   border: clamp(8px, .85vw, 13px) solid var(--gold);
@@ -499,8 +524,7 @@ select {
   background: rgba(3, 18, 58, .54);
   box-shadow: inset 0 0 42px rgba(0,0,0,.34);
 }
-.island-banner,
-.horn-label {
+.island-banner {
   display: flex;
   align-items: center;
   justify-content: center;
@@ -513,8 +537,7 @@ select {
   font-weight: 900;
   font-size: clamp(.72rem, .9vw, .95rem);
 }
-.island-banner strong,
-.horn-label {
+.island-banner strong {
   color: var(--coral);
   text-shadow: 0 0 12px rgba(255, 49, 79, .35);
 }
@@ -639,7 +662,7 @@ select {
   left: 6px;
   right: 6px;
   bottom: 6px;
-  z-index: 3;
+  z-index: 8;
   display: grid;
   grid-template-columns: repeat(2, 1fr);
   gap: 4px;
@@ -870,17 +893,17 @@ select {
 .right-rail-body {
   margin-top: 10px;
 }
-.right-collapsed .right-rail {
+.right-rail.collapsed {
   align-self: stretch;
   display: flex;
   justify-content: center;
   padding: 8px;
   overflow: hidden;
 }
-.right-collapsed .right-rail-body {
+.right-rail.collapsed .right-rail-body {
   display: none;
 }
-.right-collapsed .rail-toggle {
+.right-rail.collapsed .rail-toggle {
   writing-mode: vertical-rl;
   text-orientation: mixed;
   min-height: 120px;
@@ -968,6 +991,108 @@ select {
 .settings-stack { padding: 18px; }
 .settings-stack label { grid-template-columns: 1fr auto; align-items: center; border-bottom: 1px solid var(--line); padding-bottom: 10px; }
 .roadmap, .blueprint { margin-top: 16px; padding: 18px; }
+.account-welcome {
+  color: var(--gold) !important;
+}
+.account-panel {
+  display: grid;
+  gap: 18px;
+  padding: 18px;
+  border: 1px solid var(--line);
+  border-radius: 8px;
+  background: var(--panel);
+  box-shadow: 0 20px 80px rgba(0, 0, 0, .32);
+}
+.account-panel label {
+  display: grid;
+  gap: 8px;
+}
+.account-panel input[type="text"],
+.account-panel input:not([type]) {
+  width: 100%;
+  border: 1px solid var(--line);
+  border-radius: 8px;
+  color: var(--text);
+  background: #06183f;
+  padding: 12px;
+}
+.budget-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(190px, 1fr));
+  gap: 12px;
+}
+.budget-card {
+  min-height: 160px;
+  align-content: start;
+  border: 1px solid rgba(255, 213, 90, .25);
+  border-radius: 8px;
+  background: rgba(255,255,255,.045);
+  padding: 16px;
+  cursor: pointer;
+}
+.budget-card:has(input:checked) {
+  border-color: var(--gold);
+  background: rgba(255, 213, 90, .1);
+  box-shadow: 0 0 28px rgba(255, 213, 90, .16);
+}
+.budget-card input {
+  width: fit-content;
+  accent-color: var(--gold);
+}
+.budget-card strong,
+.budget-card b,
+.budget-card span {
+  display: block;
+}
+.budget-card b {
+  color: var(--gold);
+  font-size: 1.45rem;
+}
+.budget-card span {
+  color: var(--muted);
+}
+.danger-button {
+  border-color: rgba(255, 49, 79, .55);
+  color: #ff8895;
+}
+.bar-panel {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) minmax(220px, 340px);
+  gap: 18px;
+  align-items: stretch;
+  border: 1px solid var(--line);
+  border-radius: 8px;
+  background: var(--panel);
+  padding: clamp(18px, 3vw, 30px);
+  box-shadow: 0 20px 80px rgba(0,0,0,.32);
+}
+.bar-panel p {
+  color: var(--muted);
+  line-height: 1.65;
+}
+.bar-neon {
+  display: grid;
+  place-items: center;
+  min-height: 220px;
+  border: 1px solid rgba(255, 213, 90, .38);
+  border-radius: 8px;
+  background: radial-gradient(circle, rgba(255, 213, 90, .18), transparent 60%), rgba(1, 8, 28, .7);
+  text-align: center;
+}
+.bar-neon strong {
+  display: grid;
+  place-items: center;
+  width: 110px;
+  aspect-ratio: 1;
+  border: 3px solid var(--gold);
+  border-radius: 50%;
+  color: var(--gold);
+  font-size: 2.2rem;
+  box-shadow: 0 0 38px rgba(255, 213, 90, .28);
+}
+.bar-neon span {
+  color: var(--muted);
+}
 .tutorial-grid article { padding: 18px; cursor: pointer; }
 .tutorial-grid article.active { border-color: var(--gold); background: rgba(255, 213, 90, 0.09); }
 .blueprint div { display: flex; flex-wrap: wrap; gap: 8px; }
@@ -996,10 +1121,10 @@ select {
 }
 .toast {
   position: fixed;
-  left: 50%;
-  bottom: 24px;
+  top: 88px;
+  right: 18px;
   z-index: 60;
-  transform: translateX(-50%);
+  transform: none;
   max-width: min(520px, calc(100vw - 32px));
   padding: 12px 16px;
   border: 1px solid rgba(255, 49, 79, 0.6);
@@ -1031,6 +1156,10 @@ select {
   border-color: rgba(162, 107, 255, .55);
   background: radial-gradient(circle at 74% 18%, rgba(162, 107, 255, .24), transparent 9rem), linear-gradient(145deg, rgba(66, 232, 255, .12), rgba(255, 49, 79, .1)), rgba(4, 18, 49, .86);
   box-shadow: 0 0 46px rgba(162, 107, 255, .16), 0 20px 80px rgba(0, 0, 0, .32);
+}
+.bar-tile {
+  border-color: rgba(255, 213, 90, .5);
+  background: radial-gradient(circle at 40% 12%, rgba(255, 213, 90, .22), transparent 8rem), linear-gradient(145deg, rgba(66, 232, 255, .1), rgba(255, 49, 79, .12)), rgba(4, 18, 49, .86);
 }
 
 .card-game-screen {
@@ -1087,6 +1216,30 @@ select {
   grid-template-columns: minmax(0, 1fr) minmax(280px, 360px);
   gap: 16px;
 }
+.card-game-layout.info-dock-left {
+  grid-template-columns: minmax(280px, 360px) minmax(0, 1fr);
+}
+.card-game-layout.info-dock-left .guide-panel {
+  order: -1;
+}
+.card-game-layout.info-dock-top,
+.card-game-layout.info-dock-bottom {
+  grid-template-columns: 1fr;
+}
+.card-game-layout.info-dock-top .guide-panel {
+  order: -1;
+}
+.card-game-layout.info-dock-bottom .guide-panel {
+  order: 2;
+}
+.card-game-layout.info-dock-top .guide-panel,
+.card-game-layout.info-dock-bottom .guide-panel {
+  grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+}
+.card-game-layout.info-dock-top .guide-panel h3,
+.card-game-layout.info-dock-bottom .guide-panel h3 {
+  grid-column: 1 / -1;
+}
 .machine-panel,
 .guide-panel,
 .blackjack-table {
@@ -1098,6 +1251,8 @@ select {
 }
 .machine-panel,
 .blackjack-table {
+  display: grid;
+  gap: 16px;
   padding: clamp(14px, 2.5vw, 28px);
 }
 .guide-panel {
@@ -1141,7 +1296,7 @@ select {
   display: grid;
   grid-template-rows: auto 1fr auto;
   width: clamp(92px, 11vw, 150px);
-  aspect-ratio: 2.5 / 3.5;
+  aspect-ratio: 3 / 4;
   border: 1px solid rgba(255,255,255,.82);
   border-radius: 8px;
   color: #0c1730;
@@ -1228,6 +1383,35 @@ button.playing-card:disabled { cursor: default; }
   grid-template-columns: minmax(260px, 1fr) repeat(3, minmax(110px, auto));
   gap: 10px;
   align-items: center;
+}
+.controls-dock-top .machine-controls {
+  order: -1;
+}
+.controls-dock-left,
+.controls-dock-right {
+  grid-template-columns: minmax(210px, 280px) minmax(0, 1fr);
+  align-items: start;
+}
+.controls-dock-right {
+  grid-template-columns: minmax(0, 1fr) minmax(210px, 280px);
+}
+.controls-dock-left > :not(.machine-controls),
+.controls-dock-right > :not(.machine-controls) {
+  grid-column: 2;
+}
+.controls-dock-right > :not(.machine-controls) {
+  grid-column: 1;
+}
+.controls-dock-left .machine-controls,
+.controls-dock-right .machine-controls {
+  grid-row: 1 / span 6;
+  grid-template-columns: 1fr;
+}
+.controls-dock-left .machine-controls {
+  grid-column: 1;
+}
+.controls-dock-right .machine-controls {
+  grid-column: 2;
 }
 .blackjack-controls {
   grid-template-columns: minmax(260px, 1fr) repeat(5, minmax(88px, auto));
@@ -1326,9 +1510,51 @@ button.playing-card:disabled { cursor: default; }
 }
 .blackjack-table {
   position: relative;
+  gap: clamp(7px, .9vw, 12px);
+  padding: clamp(10px, 1.4vw, 18px);
   overflow: hidden;
   background: radial-gradient(circle at 50% 36%, rgba(66, 232, 255, .13), transparent 24rem), linear-gradient(rgba(255, 213, 90, .055) 1px, transparent 1px), linear-gradient(90deg, rgba(255, 213, 90, .055) 1px, transparent 1px), linear-gradient(145deg, var(--felt-royal), var(--felt-dark));
   background-size: cover, 32px 32px, 32px 32px, cover;
+}
+.blackjack-screen {
+  padding: clamp(8px, 1.4vw, 18px);
+}
+.blackjack-screen .card-game-hero {
+  align-items: center;
+  margin-bottom: 10px;
+  padding: clamp(10px, 1.6vw, 18px);
+}
+.blackjack-screen .card-game-hero h2 {
+  font-size: clamp(1.9rem, 3.2vw, 3.6rem);
+}
+.blackjack-screen .card-game-hero p {
+  line-height: 1.35;
+}
+.blackjack-screen .game-bankroll {
+  padding: 10px 12px;
+}
+.blackjack-screen .game-bankroll strong {
+  font-size: 1.55rem;
+}
+.blackjack-screen .card-game-layout {
+  gap: 10px;
+}
+.blackjack-table .card-row {
+  gap: clamp(6px, .9vw, 10px);
+  margin: clamp(4px, 1vw, 12px) 0;
+}
+.blackjack-table .playing-card {
+  width: clamp(62px, 7.4vw, 104px);
+  padding: clamp(6px, .75vw, 9px);
+}
+.blackjack-table .playing-card span {
+  font-size: clamp(1rem, 1.6vw, 1.45rem);
+}
+.blackjack-table .playing-card b {
+  font-size: clamp(2.1rem, 4vw, 3.7rem);
+}
+.blackjack-table .card-back span {
+  width: 54%;
 }
 .ultimate-machine,
 .ultimate-guide {
@@ -1368,7 +1594,8 @@ button.playing-card:disabled { cursor: default; }
 .blackjack-felt-mark {
   display: grid;
   place-items: center;
-  min-height: 110px;
+  min-height: clamp(58px, 8vw, 82px);
+  padding: 8px 14px;
   border: 2px solid rgba(255, 213, 90, .58);
   border-radius: 50%;
   color: var(--gold);
@@ -1376,7 +1603,10 @@ button.playing-card:disabled { cursor: default; }
   box-shadow: inset 0 0 34px rgba(0,0,0,.28);
 }
 .blackjack-felt-mark span { color: var(--muted); }
-.blackjack-callout { margin-bottom: 14px; }
+.blackjack-callout {
+  margin-bottom: 0;
+  padding: 10px 12px;
+}
 .good { color: #63f58f !important; }
 .bad { color: #ff6b79 !important; }
 
@@ -1395,15 +1625,9 @@ button.playing-card:disabled { cursor: default; }
   .blackjack-controls .compact-rack {
     grid-column: 1 / -1;
   }
-  .table-screen {
-    grid-template-columns: minmax(0, 1fr) clamp(210px, 24vw, 280px);
-    grid-template-areas:
-      "hud right"
-      "table right"
-      "left right";
-  }
-  .table-screen.right-collapsed {
-    grid-template-columns: minmax(0, 1fr) 54px;
+  .dock-left,
+  .dock-right {
+    width: clamp(190px, 22vw, 270px);
   }
   .left-rail {
     grid-template-columns: minmax(260px, 1fr) minmax(150px, .58fr) minmax(130px, .48fr) minmax(220px, .9fr);
@@ -1425,16 +1649,48 @@ button.playing-card:disabled { cursor: default; }
 }
 
 @media (max-width: 980px) {
-  .table-screen {
+  .dock-middle {
     grid-template-columns: 1fr;
-    grid-template-areas:
-      "hud"
-      "table"
-      "right"
-      "left";
   }
-  .table-screen.right-collapsed {
+  .dock-left,
+  .dock-right {
+    width: auto;
+  }
+  .dock-left,
+  .dock-right,
+  .dock-top,
+  .dock-bottom {
     grid-template-columns: 1fr;
+  }
+  .dock-left .table-hud,
+  .dock-right .table-hud,
+  .dock-left .left-rail,
+  .dock-right .left-rail {
+    grid-template-columns: minmax(220px, 1fr) auto auto;
+  }
+  .dock-left .chip-rack,
+  .dock-right .chip-rack {
+    grid-template-columns: repeat(6, minmax(38px, 1fr));
+  }
+  .card-game-layout,
+  .card-game-layout.info-dock-left,
+  .card-game-layout.info-dock-right,
+  .blackjack-layout {
+    grid-template-columns: 1fr;
+  }
+  .controls-dock-left,
+  .controls-dock-right {
+    grid-template-columns: 1fr;
+  }
+  .controls-dock-left > :not(.machine-controls),
+  .controls-dock-right > :not(.machine-controls),
+  .controls-dock-left .machine-controls,
+  .controls-dock-right .machine-controls {
+    grid-column: 1;
+    grid-row: auto;
+  }
+  .card-game-layout.info-dock-left .guide-panel {
+    order: 2;
   }
   .table-hud {
     grid-template-columns: minmax(220px, 1fr) auto auto;
@@ -1447,22 +1703,12 @@ button.playing-card:disabled { cursor: default; }
   .left-rail .chip-rack,
   .left-rail .quick-bets { grid-column: 1; }
   .left-rail .select-row { grid-column: 2; }
-  .left-rail [data-auto-bet],
   .left-rail .clear-button,
   .left-rail .ambience-button { grid-column: auto; }
-  .craps-felt { min-width: 900px; transform: none; }
-  .craps-felt:has(.crapless-points) { min-width: 980px; }
+  .craps-felt { transform: none; }
   .right-rail {
     position: static;
     max-height: none;
-  }
-  .right-collapsed .right-rail {
-    align-self: auto;
-    display: block;
-  }
-  .right-collapsed .rail-toggle {
-    writing-mode: horizontal-tb;
-    min-height: 0;
   }
   .history-band { grid-template-columns: 1fr; }
 }
@@ -1492,7 +1738,6 @@ button.playing-card:disabled { cursor: default; }
   .playing-card {
     width: clamp(72px, 26vw, 112px);
   }
-  .table-screen { padding: 8px; gap: 10px; }
   .table-hud {
     grid-template-columns: 1fr auto;
   }
@@ -1507,7 +1752,6 @@ button.playing-card:disabled { cursor: default; }
   .left-rail { grid-template-columns: 1fr; }
   .left-rail .chip-rack,
   .left-rail .select-row,
-  .left-rail [data-auto-bet],
   .left-rail .clear-button,
   .left-rail .ambience-button,
   .left-rail .quick-bets { grid-column: 1; }
@@ -1517,8 +1761,6 @@ button.playing-card:disabled { cursor: default; }
   .chip { width: 100%; max-width: 54px; }
   .chip { border-width: 3px; font-size: .72rem; }
   .quick-bets { grid-template-columns: 1fr 1fr; }
-  .craps-felt { min-width: 840px; }
-  .craps-felt:has(.crapless-points) { min-width: 940px; }
   .number-controls {
     opacity: 1;
     transform: none;
@@ -1530,8 +1772,6 @@ button.playing-card:disabled { cursor: default; }
   .topbar nav { gap: 6px; }
   .topbar nav button { padding: 9px 10px; }
   .bankroll-pill { width: 100%; }
-  .craps-felt { min-width: 800px; }
-  .craps-felt:has(.crapless-points) { min-width: 900px; }
   .field-real { padding-right: 48px; }
   .field-right { padding-right: clamp(8px, .9vw, 14px); }
   .field-track { gap: 3px; }

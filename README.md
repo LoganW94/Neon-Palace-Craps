@@ -1,6 +1,6 @@
 # Neon Palace Casino
 
-Neon Palace Casino is a local Vegas-inspired casino game floor with immersive craps, Jacks or Better video poker, Deuces Wild Ultimate X, blackjack with a live player guide, bankroll tracking, casino ambience, and a Node backend shaped for future multiplayer expansion.
+Neon Palace Casino is a local Vegas-inspired casino game floor with immersive craps, Jacks or Better video poker, Deuces Wild Ultimate X, blackjack with a live player guide, persistent credits, casino ambience, and a Node backend shaped for future multiplayer expansion.
 
 The project currently runs without third-party dependencies. If you have Node installed, you can launch it directly.
 
@@ -49,14 +49,20 @@ launch.bat
 
 ## Casino Games
 
-- Main menu reworked as a casino floor with Craps, Jacks or Better, Deuces Wild Ultimate X, Blackjack, Settings, Stats, and unavailable Multiplayer.
+- Main menu reworked as a casino floor with Craps, Video Poker, Blackjack, Bar, Settings, Stats, and unavailable Multiplayer.
+- Video Poker now opens a machine picker for Jacks or Better and Deuces Wild Ultimate X.
+- The Bar is a prepared placeholder for future social, comps, boosts, and RPG progression features.
+- Local account creation with username and starting budget presets.
+- One persistent credit balance carries across every game.
+- Account reset is available only from Account settings.
+- Dockable in-game UI groups. Players can move the HUD, controls, and info/guide panels to the top, bottom, left, or right.
 - Shared chip selection across games.
 - Poker machines use credit denominations starting at 5 cents.
 - Jacks or Better and Deuces Wild Ultimate X support 1 to 10 hands per deal.
 - Card-specific sound effects for dealing, drawing, holds, wins, and losses.
 - Softer animated card entry for video poker and blackjack hands, with held poker cards pulled down slightly.
 - Neon Palace blue/gold/cyan/coral visual theme across table games and card machines.
-- Bankroll and profit/loss tracking per game surface.
+- Credit and profit/loss tracking per game surface.
 
 ## Craps Features
 
@@ -69,9 +75,13 @@ launch.bat
 - Bets-off behavior for number bets on come-out rolls
 - Point marker directly on the active number
 - Traveled Come bet chips on number boxes
-- Current bet total, bankroll, profit/loss, roll history, and streak tracking
+- Current bet total, credits, profit/loss, roll history, and streak tracking
+- Player-adjustable HUD, controls, and info rail placement
+- Separate table leaderboard panel
 - Clear removable bets while keeping contract bets protected
+- Center Action proposition bet
 - Per-number Press, Pull, Buy, and Lay controls
+- Fixed table view without inner felt scrolling
 - Chip stacks summarized into higher denominations instead of growing indefinitely
 - More realistic Field layout with 2/12 double-pay markings
 - Casino sound effects and optional ambience/music
@@ -90,7 +100,7 @@ launch.bat
 ## Deuces Wild Ultimate X
 
 - Deuces are wild.
-- Separate Ultimate X bankroll and machine screen.
+- Separate Ultimate X machine screen using the shared account credits.
 - 1 to 10 hand play with per-hand multiplier results.
 - Active multiplier applies to the current draw payout.
 - Winning hands award a multiplier for the next hand.

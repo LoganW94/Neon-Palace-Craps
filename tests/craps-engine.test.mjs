@@ -53,6 +53,14 @@ function testFieldWinPaysProfitAndStaysWorking() {
   assert.equal(result.state.bets.find((bet) => bet.type === "field")?.amount, 10);
 }
 
+function testCenterActionWinsOnHornNumber() {
+  let state = createInitialState("casino", 1000);
+  state = placeBet(state, { type: "proposition", number: "centerAction", amount: 10 }).state;
+  const result = resolveRoll(state, { die1: 5, die2: 6, total: 11, hard: false });
+  assert.equal(result.state.bankroll, 1070);
+  assert.equal(result.state.bets.some((bet) => bet.number === "centerAction"), false);
+}
+
 function testFieldSevenOutOnlyLosesOnce() {
   let state = createInitialState("casino", 1000);
   state = resolveRoll(state, { die1: 2, die2: 2, total: 4, hard: true }).state;
@@ -161,6 +169,7 @@ function testCraplessRejectsDontCome() {
   testHardSixWinsNineToOne,
   testFieldLosesOnSix,
   testFieldWinPaysProfitAndStaysWorking,
+  testCenterActionWinsOnHornNumber,
   testFieldSevenOutOnlyLosesOnce,
   testNumberBetsDoNotWorkOnComeOut,
   testClearBetsKeepsContractBetsOnly,

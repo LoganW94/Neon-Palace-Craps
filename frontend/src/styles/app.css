@@ -885,10 +885,8 @@ select {
   font-weight: 900;
 }
 .right-rail {
-  position: sticky;
-  top: 90px;
-  max-height: calc(100vh - 108px);
-  overflow: auto;
+  max-height: none;
+  overflow: visible;
 }
 .right-rail-body {
   margin-top: 10px;
@@ -1055,43 +1053,128 @@ select {
   border-color: rgba(255, 49, 79, .55);
   color: #ff8895;
 }
-.bar-panel {
+.bar-page {
+  min-height: calc(100vh - 78px);
+  padding: clamp(10px, 2vw, 22px);
+  background: radial-gradient(circle at 50% 18%, rgba(255, 213, 90, .12), transparent 22rem), linear-gradient(180deg, rgba(5, 16, 42, .35), rgba(1, 5, 16, .92));
+}
+.bar-room {
+  position: relative;
   display: grid;
-  grid-template-columns: minmax(0, 1fr) minmax(220px, 340px);
-  gap: 18px;
-  align-items: stretch;
+  grid-template-rows: minmax(170px, 28vh) minmax(420px, 1fr);
+  width: min(100%, 1500px);
+  margin: 0 auto;
+  overflow: hidden;
   border: 1px solid var(--line);
   border-radius: 8px;
-  background: var(--panel);
-  padding: clamp(18px, 3vw, 30px);
-  box-shadow: 0 20px 80px rgba(0,0,0,.32);
+  background: linear-gradient(180deg, rgba(12, 31, 70, .9), rgba(23, 10, 28, .92));
+  box-shadow: inset 0 0 80px rgba(0,0,0,.42), 0 24px 90px rgba(0,0,0,.38);
 }
-.bar-panel p {
-  color: var(--muted);
-  line-height: 1.65;
+.bottle-wall {
+  display: grid;
+  grid-template-columns: repeat(10, 1fr);
+  gap: clamp(8px, 1vw, 14px);
+  align-items: end;
+  padding: clamp(18px, 2vw, 30px) clamp(24px, 4vw, 60px);
+  border-bottom: 10px solid rgba(255, 213, 90, .18);
+  background: repeating-linear-gradient(90deg, rgba(255,255,255,.04) 0 1px, transparent 1px 9.8%), radial-gradient(circle at 50% 0%, rgba(66, 232, 255, .18), transparent 20rem);
 }
-.bar-neon {
+.bottle-wall span {
+  display: block;
+  width: clamp(18px, 2vw, 34px);
+  height: calc(58px + var(--bottle) * 12px);
+  margin: 0 auto;
+  border: 1px solid rgba(255,255,255,.42);
+  border-radius: 10px 10px 4px 4px;
+  background: linear-gradient(180deg, rgba(255,255,255,.35), transparent 18%), hsl(calc(185 + var(--bottle) * 34), 72%, 34%);
+  box-shadow: 0 0 20px rgba(66, 232, 255, .12);
+}
+.bar-counter {
+  position: relative;
+  display: grid;
+  grid-template-columns: minmax(220px, 320px) minmax(0, 1fr) minmax(210px, 300px);
+  gap: clamp(12px, 1.6vw, 22px);
+  align-items: start;
+  padding: clamp(20px, 3vw, 38px);
+  background: linear-gradient(180deg, rgba(47, 18, 26, .86), rgba(12, 6, 16, .95));
+}
+.counter-shine {
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+  background: linear-gradient(110deg, transparent, rgba(255, 213, 90, .08), transparent 62%);
+}
+.bar-video-poker {
+  position: relative;
   display: grid;
   place-items: center;
-  min-height: 220px;
-  border: 1px solid rgba(255, 213, 90, .38);
+  min-height: 180px;
+  border: 10px solid #121923;
   border-radius: 8px;
-  background: radial-gradient(circle, rgba(255, 213, 90, .18), transparent 60%), rgba(1, 8, 28, .7);
+  color: var(--coral);
+  background: repeating-linear-gradient(0deg, rgba(255,255,255,.06) 0 1px, transparent 1px 6px), #031027;
+  box-shadow: 0 18px 30px rgba(0,0,0,.42), inset 0 0 40px rgba(66, 232, 255, .14);
   text-align: center;
 }
-.bar-neon strong {
-  display: grid;
-  place-items: center;
-  width: 110px;
-  aspect-ratio: 1;
-  border: 3px solid var(--gold);
-  border-radius: 50%;
-  color: var(--gold);
-  font-size: 2.2rem;
-  box-shadow: 0 0 38px rgba(255, 213, 90, .28);
+.bar-video-poker strong,
+.bar-video-poker span {
+  display: block;
 }
-.bar-neon span {
+.bar-video-poker span {
+  color: var(--gold);
+  font-size: clamp(1.3rem, 2.4vw, 2.3rem);
+  font-weight: 900;
+  transform: rotate(-7deg);
+}
+.bar-menu-board,
+.bar-inventory {
+  position: relative;
+  z-index: 1;
+  border: 1px solid rgba(255, 213, 90, .32);
+  border-radius: 8px;
+  background: rgba(1, 8, 28, .78);
+  padding: clamp(14px, 1.8vw, 22px);
+}
+.bar-menu-board h2,
+.bar-inventory h3 {
+  margin: 0 0 12px;
+}
+.bar-menu-grid {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(180px, 1fr));
+  gap: 12px;
+}
+.bar-menu-section h3 {
+  color: var(--gold);
+}
+.bar-item {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto;
+  gap: 10px;
+  align-items: center;
+  padding: 10px 0;
+  border-top: 1px solid rgba(255, 213, 90, .18);
+}
+.bar-item p,
+.bar-inventory p {
+  margin: 4px 0 0;
   color: var(--muted);
+  font-size: .86rem;
+  line-height: 1.35;
+}
+.bar-item button {
+  min-width: 78px;
+  padding: 8px 10px;
+}
+.bar-inventory {
+  display: grid;
+  gap: 8px;
+}
+.bar-inventory span {
+  padding: 7px 9px;
+  border: 1px solid rgba(66, 232, 255, .28);
+  border-radius: 999px;
+  background: rgba(66, 232, 255, .08);
 }
 .tutorial-grid article { padding: 18px; cursor: pointer; }
 .tutorial-grid article.active { border-color: var(--gold); background: rgba(255, 213, 90, 0.09); }
@@ -1157,6 +1240,11 @@ select {
   background: radial-gradient(circle at 74% 18%, rgba(162, 107, 255, .24), transparent 9rem), linear-gradient(145deg, rgba(66, 232, 255, .12), rgba(255, 49, 79, .1)), rgba(4, 18, 49, .86);
   box-shadow: 0 0 46px rgba(162, 107, 255, .16), 0 20px 80px rgba(0, 0, 0, .32);
 }
+.bonus-tile {
+  border-color: rgba(255, 213, 90, .5);
+  background: radial-gradient(circle at 72% 16%, rgba(255, 213, 90, .2), transparent 8rem), linear-gradient(145deg, rgba(66, 232, 255, .1), rgba(162, 107, 255, .12)), rgba(4, 18, 49, .86);
+  box-shadow: 0 0 44px rgba(255, 213, 90, .12), 0 20px 80px rgba(0, 0, 0, .32);
+}
 .bar-tile {
   border-color: rgba(255, 213, 90, .5);
   background: radial-gradient(circle at 40% 12%, rgba(255, 213, 90, .22), transparent 8rem), linear-gradient(145deg, rgba(66, 232, 255, .1), rgba(255, 49, 79, .12)), rgba(4, 18, 49, .86);
@@ -1165,51 +1253,43 @@ select {
 .card-game-screen {
   width: min(100%, 1500px);
   margin: 0 auto;
-  padding: clamp(14px, 3vw, 36px);
+  padding: clamp(8px, 1.4vw, 16px);
 }
 .card-game-hero {
-  display: flex;
-  align-items: end;
-  justify-content: space-between;
-  gap: 18px;
-  margin-bottom: 18px;
-  padding: clamp(18px, 3vw, 30px);
+  display: grid;
+  grid-template-columns: minmax(0, 1fr);
+  align-items: center;
+  gap: 12px;
+  margin-bottom: 8px;
+  padding: 9px 12px;
   border: 1px solid var(--line);
   border-radius: 8px;
   background: radial-gradient(circle at 15% 10%, rgba(66, 232, 255, .18), transparent 18rem), radial-gradient(circle at 82% 12%, rgba(255, 49, 79, .16), transparent 16rem), rgba(4, 14, 38, .82);
-  box-shadow: 0 20px 80px rgba(0, 0, 0, .32);
+  box-shadow: 0 12px 40px rgba(0, 0, 0, .26);
 }
 .card-game-hero h2 {
-  margin: 4px 0 8px;
-  font-size: clamp(2.4rem, 5vw, 5rem);
-  line-height: .92;
+  margin: 0;
+  font-size: clamp(1.25rem, 2.3vw, 2rem);
+  line-height: 1;
 }
 .card-game-hero p {
   max-width: 680px;
-  margin: 0;
+  margin: 4px 0 0;
   color: var(--muted);
-  line-height: 1.55;
+  font-size: .82rem;
+  line-height: 1.25;
+}
+.card-game-hero .eyebrow {
+  margin: 0 0 3px;
+  font-size: .64rem;
 }
 .ultimate-hero {
   border-color: rgba(162, 107, 255, .42);
   background: radial-gradient(circle at 16% 8%, rgba(162, 107, 255, .24), transparent 18rem), radial-gradient(circle at 82% 10%, rgba(66, 232, 255, .18), transparent 16rem), rgba(4, 14, 38, .86);
 }
-.game-bankroll {
-  min-width: 170px;
-  padding: 14px;
-  border: 1px solid rgba(255, 213, 90, .48);
-  border-radius: 8px;
-  background: rgba(255, 213, 90, .08);
-}
-.game-bankroll span,
-.game-bankroll em {
-  display: block;
-  color: var(--muted);
-  font-style: normal;
-}
-.game-bankroll strong {
-  display: block;
-  font-size: 2rem;
+.bonus-hero {
+  border-color: rgba(255, 213, 90, .42);
+  background: radial-gradient(circle at 16% 8%, rgba(255, 213, 90, .2), transparent 18rem), radial-gradient(circle at 82% 10%, rgba(162, 107, 255, .16), transparent 16rem), rgba(4, 14, 38, .86);
 }
 .card-game-layout {
   display: grid;
@@ -1252,8 +1332,9 @@ select {
 .machine-panel,
 .blackjack-table {
   display: grid;
-  gap: 16px;
-  padding: clamp(14px, 2.5vw, 28px);
+  gap: 10px;
+  align-content: start;
+  padding: clamp(10px, 1.8vw, 18px);
 }
 .guide-panel {
   display: grid;
@@ -1267,6 +1348,7 @@ select {
 }
 .machine-display,
 .strategy-card {
+  align-self: start;
   padding: 14px;
   border: 1px solid rgba(66, 232, 255, .32);
   border-radius: 8px;
@@ -1275,7 +1357,7 @@ select {
 .machine-display strong,
 .strategy-card strong {
   display: block;
-  font-size: clamp(1.15rem, 2vw, 1.55rem);
+  font-size: clamp(1rem, 1.6vw, 1.32rem);
 }
 .machine-display span,
 .strategy-card span {
@@ -1288,7 +1370,7 @@ select {
   display: flex;
   justify-content: center;
   gap: clamp(8px, 1.3vw, 16px);
-  margin: clamp(18px, 4vw, 44px) 0;
+  margin: clamp(8px, 1.6vw, 18px) 0;
   flex-wrap: wrap;
 }
 .playing-card {
@@ -1398,6 +1480,7 @@ button.playing-card:disabled { cursor: default; }
 .controls-dock-left > :not(.machine-controls),
 .controls-dock-right > :not(.machine-controls) {
   grid-column: 2;
+  align-self: start;
 }
 .controls-dock-right > :not(.machine-controls) {
   grid-column: 1;
@@ -1521,20 +1604,14 @@ button.playing-card:disabled { cursor: default; }
 }
 .blackjack-screen .card-game-hero {
   align-items: center;
-  margin-bottom: 10px;
-  padding: clamp(10px, 1.6vw, 18px);
+  margin-bottom: 8px;
+  padding: 9px 12px;
 }
 .blackjack-screen .card-game-hero h2 {
-  font-size: clamp(1.9rem, 3.2vw, 3.6rem);
+  font-size: clamp(1.25rem, 2.3vw, 2rem);
 }
 .blackjack-screen .card-game-hero p {
-  line-height: 1.35;
-}
-.blackjack-screen .game-bankroll {
-  padding: 10px 12px;
-}
-.blackjack-screen .game-bankroll strong {
-  font-size: 1.55rem;
+  line-height: 1.25;
 }
 .blackjack-screen .card-game-layout {
   gap: 10px;
@@ -1557,9 +1634,16 @@ button.playing-card:disabled { cursor: default; }
   width: 54%;
 }
 .ultimate-machine,
-.ultimate-guide {
+.ultimate-guide,
+.bonus-machine,
+.bonus-guide {
   border-color: rgba(162, 107, 255, .38);
   box-shadow: inset 0 0 50px rgba(0,0,0,.34), 0 0 46px rgba(162, 107, 255, .12), 0 20px 80px rgba(0, 0, 0, .32);
+}
+.bonus-machine,
+.bonus-guide {
+  border-color: rgba(255, 213, 90, .36);
+  box-shadow: inset 0 0 50px rgba(0,0,0,.34), 0 0 46px rgba(255, 213, 90, .1), 0 20px 80px rgba(0, 0, 0, .32);
 }
 .multiplier-display {
   border-color: rgba(162, 107, 255, .45);
@@ -1583,6 +1667,29 @@ button.playing-card:disabled { cursor: default; }
 .player-hand {
   position: relative;
   z-index: 1;
+}
+.split-hand-grid {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(180px, 1fr));
+  gap: 10px;
+}
+.split-hand {
+  border: 1px solid rgba(255, 213, 90, .24);
+  border-radius: 8px;
+  padding: 8px;
+  background: rgba(1, 8, 28, .34);
+}
+.split-hand.active {
+  border-color: var(--gold);
+  box-shadow: 0 0 24px rgba(255, 213, 90, .16);
+}
+.split-hand.win { border-color: rgba(99, 245, 143, .5); }
+.split-hand.loss { border-color: rgba(255, 107, 121, .5); }
+.split-hand em {
+  display: block;
+  color: var(--muted);
+  font-style: normal;
+  text-align: center;
 }
 .hand-label {
   display: flex;
@@ -1624,6 +1731,12 @@ button.playing-card:disabled { cursor: default; }
   }
   .blackjack-controls .compact-rack {
     grid-column: 1 / -1;
+  }
+  .bar-counter {
+    grid-template-columns: 1fr;
+  }
+  .bar-menu-grid {
+    grid-template-columns: 1fr;
   }
   .dock-left,
   .dock-right {
@@ -1723,9 +1836,6 @@ button.playing-card:disabled { cursor: default; }
   .card-game-hero {
     align-items: stretch;
     flex-direction: column;
-  }
-  .game-bankroll {
-    width: 100%;
   }
   .machine-controls,
   .blackjack-controls {

@@ -1,6 +1,6 @@
 # Neon Palace Casino
 
-Neon Palace Casino is a local Vegas-inspired casino game floor with immersive craps, Jacks or Better video poker, Deuces Wild Ultimate X, blackjack with a live player guide, persistent credits, casino ambience, and a Node backend shaped for future multiplayer expansion.
+Neon Palace Casino is a local Vegas-inspired casino game floor with immersive craps, Jacks or Better video poker, Deuces Wild, Bonus Poker, blackjack with a live player guide, persistent credits, casino ambience, and a Node backend shaped for future multiplayer expansion.
 
 The project currently runs without third-party dependencies. If you have Node installed, you can launch it directly.
 
@@ -50,15 +50,15 @@ launch.bat
 ## Casino Games
 
 - Main menu reworked as a casino floor with Craps, Video Poker, Blackjack, Bar, Settings, Stats, and unavailable Multiplayer.
-- Video Poker now opens a machine picker for Jacks or Better and Deuces Wild Ultimate X.
-- The Bar is a prepared placeholder for future social, comps, boosts, and RPG progression features.
+- Video Poker now opens a machine picker for Jacks or Better, Deuces Wild, and Bonus Poker.
+- The Bar includes a seated bar scene, drink and food menu, purchasable items, inventory storage, and future hooks for social, comps, boosts, and RPG progression features.
 - Local account creation with username and starting budget presets.
 - One persistent credit balance carries across every game.
 - Account reset is available only from Account settings.
 - Dockable in-game UI groups. Players can move the HUD, controls, and info/guide panels to the top, bottom, left, or right.
 - Shared chip selection across games.
 - Poker machines use credit denominations starting at 5 cents.
-- Jacks or Better and Deuces Wild Ultimate X support 1 to 10 hands per deal.
+- Jacks or Better, Deuces Wild, and Bonus Poker support 1 to 10 hands per deal.
 - Card-specific sound effects for dealing, drawing, holds, wins, and losses.
 - Softer animated card entry for video poker and blackjack hands, with held poker cards pulled down slightly.
 - Neon Palace blue/gold/cyan/coral visual theme across table games and card machines.
@@ -72,11 +72,12 @@ launch.bat
 - Field, Place, Buy, Lay, Hardways, Proposition, Big 6 / Big 8
 - Crapless Craps mode where 2, 3, 11, and 12 establish points instead of crapping out
 - Proper shooter rotation after seven-out
+- Craps table timers pause when you leave the table for another game or menu.
 - Bets-off behavior for number bets on come-out rolls
 - Point marker directly on the active number
 - Traveled Come bet chips on number boxes
 - Current bet total, credits, profit/loss, roll history, and streak tracking
-- Player-adjustable HUD, controls, and info rail placement
+- Player-adjustable HUD, controls, and info rail placement from Settings
 - Separate table leaderboard panel
 - Clear removable bets while keeping contract bets protected
 - Center Action proposition bet
@@ -97,22 +98,35 @@ launch.bat
 - Hand evaluation for royal flush, straight flush, four of a kind, full house, flush, straight, trips, two pair, and Jacks or Better.
 - Session stats for hands played, last payout, and best hand.
 
-## Deuces Wild Ultimate X
+## Deuces Wild
 
 - Deuces are wild.
-- Separate Ultimate X machine screen using the shared account credits.
-- 1 to 10 hand play with per-hand multiplier results.
-- Active multiplier applies to the current draw payout.
-- Winning hands award a multiplier for the next hand.
+- Separate Deuces Wild machine screen using the shared account credits.
+- 1 to 10 hand play using the same held cards.
 - Deuces Wild paytable includes natural royal, four deuces, wild royal, five of a kind, straight flush, four of a kind, full house, flush, straight, and trips.
+
+## Bonus Poker
+
+- Bonus Poker five-card draw.
+- 1 to 10 hand play using the same held cards.
+- Premium payouts for Four Aces and Four 2s, 3s, or 4s.
+- Shared credit bankroll, hold/draw controls, and paytable display.
 
 ## Blackjack
 
 - Dealer stands on soft 17.
 - Blackjack pays 3:2.
-- Hit, stand, and double controls.
+- Hit, stand, double, and split controls.
+- Split matching pairs into two independently resolved hands.
 - Player guide with odds, house-edge context, and recommended plays based on current hand and dealer up-card.
 - Session tracking for wins, losses, and pushes.
+
+## Bar
+
+- Beer, cocktail, and food menu with credit costs.
+- Purchased items are saved to the player's local inventory.
+- Items currently include descriptions only; later they can gain gameplay or odds-related effects.
+- Bar scene includes a bottle wall, counter, and an out-of-order video poker screen.
 
 ## Controls
 

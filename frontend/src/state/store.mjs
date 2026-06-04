@@ -1,9 +1,10 @@
 import { clearWorkingBets, createInitialState, placeAiStrategyBets, placeBet, pressNumberBet, pullNumberBets, resolveRoll, rollDice, strategyRecommendation } from "../../../shared/craps-engine.mjs";
-import { blackjackPlayerAction, createBlackjackState, createUltimateXState, createVideoPokerState, dealUltimateX, dealVideoPoker, drawUltimateX, drawVideoPoker, setUltimateXHands, setVideoPokerHands, startBlackjackHand, toggleUltimateXHold, toggleVideoPokerHold } from "../../../shared/casino-games.mjs";
-import { clearAccount, createAccount as buildAccount, loadAccount, saveAccount } from "../services/accountStorage.mjs";
+import { blackjackPlayerAction, createBlackjackState, createBonusPokerState, createUltimateXState, createVideoPokerState, dealBonusPoker, dealUltimateX, dealVideoPoker, drawBonusPoker, drawUltimateX, drawVideoPoker, setBonusPokerHands, setUltimateXHands, setVideoPokerHands, startBlackjackHand, toggleBonusPokerHold, toggleUltimateXHold, toggleVideoPokerHold } from "../../../shared/casino-games.mjs";
+import { BAR_ITEMS, clearAccount, createAccount as buildAccount, loadAccount, saveAccount } from "../services/accountStorage.mjs";
 
 const AI_TURN_MS = 30000;
 const PERSISTED_UI_KEYS = ["selectedCredit", "selectedChip", "selectedMode", "sound", "music", "showProbability", "showHouseEdge", "hudDock", "controlsDock", "infoDock", "uiScale"];
+const PAUSED_CRAPS_CLOCK = { turnEndsAt: null, turnSeconds: null, nextAiActionAt: null, diceRolling: false };
 
 export class Store {
   constructor() {
@@ -21,7 +22,7 @@ export class Store {
       showHouseEdge: true,
       rightRailCollapsed: false,
       hudDock: "top",
-      controlsDock: "bottom",
+      controlsDock: "right",
       infoDock: "right",
       uiScale: 0.72,
       turnEndsAt: null,
@@ -40,6 +41,7 @@ export class Store {
     this.game = this.withPlayerName(createInitialState("casino", accountCredits || 2000));
     this.videoPoker = createVideoPokerState(accountCredits || 1000);
     this.ultimateX = createUltimateXState(accountCredits || 1500);
+    this.bonusPoker = createBonusPokerState(accountCredits || 1000);
     this.blackjack = createBlackjackState(accountCredits || 2000);
     this.ensureAiFieldBets();
   }
@@ -51,11 +53,18 @@ export class Store {
   }
 
   snapshot() {
-    return { ui: this.ui, account: this.account, game: this.game, videoPoker: this.videoPoker, ultimateX: this.ultimateX, blackjack: this.blackjack, advice: strategyRecommendation(this.game) };
+    return { ui: this.ui, account: this.account, game: this.game, videoPoker: this.videoPoker, ultimateX: this.ultimateX, bonusPoker: this.bonusPoker, blackjack: this.blackjack, advice: strategyRecommendation(this.game) };
   }
 
   setUi(patch) {
-    this.ui = { ...this.ui, ...patch };
+    const leavingTable = patch.page && patch.page !== "table";
+    const returningToTable = patch.page === "table" && this.ui.page !== "table";
+    this.ui = {
+      ...this.ui,
+      ...patch,
+      ...(leavingTable ? PAUSED_CRAPS_CLOCK : {})
+    };
+    if (returningToTable) this.resetTurnClock();
     this.persistPreferences(patch);
     this.emit();
   }
@@ -66,9 +75,10 @@ export class Store {
     this.game = this.withPlayerName(createInitialState("casino", this.account.credits));
     this.videoPoker = createVideoPokerState(this.account.credits);
     this.ultimateX = createUltimateXState(this.account.credits);
+    this.bonusPoker = createBonusPokerState(this.account.credits);
     this.blackjack = createBlackjackState(this.account.credits);
     saveAccount(this.account);
-    this.ui = { ...this.ui, page: "home", lastEvent: null };
+    this.ui = { ...this.ui, page: "home", lastEvent: null, ...PAUSED_CRAPS_CLOCK };
     this.emit();
   }
 
@@ -78,8 +88,9 @@ export class Store {
     this.game = createInitialState("casino", 2000);
     this.videoPoker = createVideoPokerState(1000);
     this.ultimateX = createUltimateXState(1500);
+    this.bonusPoker = createBonusPokerState(1000);
     this.blackjack = createBlackjackState(2000);
-    this.ui = { ...this.ui, page: "account", lastEvent: null };
+    this.ui = { ...this.ui, page: "account", lastEvent: null, ...PAUSED_CRAPS_CLOCK };
     this.emit();
   }
 
@@ -93,7 +104,7 @@ export class Store {
 
   newVideoPoker(bankroll = this.videoPoker.bankroll || 1000) {
     this.videoPoker = createVideoPokerState(this.account?.credits ?? bankroll);
-    this.ui = { ...this.ui, page: "videoPoker", lastEvent: null };
+    this.ui = { ...this.ui, page: "videoPoker", lastEvent: null, ...PAUSED_CRAPS_CLOCK };
     this.emit();
   }
 
@@ -127,7 +138,7 @@ export class Store {
 
   newUltimateX(bankroll = this.ultimateX.bankroll || 1500) {
     this.ultimateX = createUltimateXState(this.account?.credits ?? bankroll);
-    this.ui = { ...this.ui, page: "ultimateX", lastEvent: null };
+    this.ui = { ...this.ui, page: "ultimateX", lastEvent: null, ...PAUSED_CRAPS_CLOCK };
     this.emit();
   }
 
@@ -159,9 +170,43 @@ export class Store {
     return result.event;
   }
 
+  newBonusPoker(bankroll = this.bonusPoker.bankroll || 1000) {
+    this.bonusPoker = createBonusPokerState(this.account?.credits ?? bankroll);
+    this.ui = { ...this.ui, page: "bonusPoker", lastEvent: null, ...PAUSED_CRAPS_CLOCK };
+    this.emit();
+  }
+
+  bonusPokerDeal() {
+    const result = dealBonusPoker(this.bonusPoker, this.ui.selectedCredit, this.bonusPoker.hands);
+    this.bonusPoker = result.state;
+    this.ui = { ...this.ui, lastEvent: result.event };
+    this.syncAccountFrom("bonusPoker");
+    this.emit();
+    return result.event;
+  }
+
+  bonusPokerHold(index) {
+    this.bonusPoker = toggleBonusPokerHold(this.bonusPoker, index);
+    this.emit();
+  }
+
+  bonusPokerHands(hands) {
+    this.bonusPoker = setBonusPokerHands(this.bonusPoker, hands);
+    this.emit();
+  }
+
+  bonusPokerDraw() {
+    const result = drawBonusPoker(this.bonusPoker);
+    this.bonusPoker = result.state;
+    this.ui = { ...this.ui, lastEvent: result.event };
+    this.syncAccountFrom("bonusPoker");
+    this.emit();
+    return result.event;
+  }
+
   newBlackjack(bankroll = this.blackjack.bankroll || 2000) {
     this.blackjack = createBlackjackState(this.account?.credits ?? bankroll);
-    this.ui = { ...this.ui, page: "blackjack", lastEvent: null };
+    this.ui = { ...this.ui, page: "blackjack", lastEvent: null, ...PAUSED_CRAPS_CLOCK };
     this.emit();
   }
 
@@ -181,6 +226,26 @@ export class Store {
     this.syncAccountFrom("blackjack");
     this.emit();
     return result.event;
+  }
+
+  buyBarItem(itemId) {
+    const item = BAR_ITEMS.find((entry) => entry.id === itemId);
+    if (!item) return { type: "rejected", message: "That bar item is not available." };
+    if (!this.account) return { type: "rejected", message: "Create an account before buying from the bar." };
+    if (this.account.credits < item.cost) return { type: "rejected", message: `Not enough credits for ${item.name}.` };
+    const inventory = [...(this.account.inventory ?? []), { id: item.id, name: item.name, category: item.category, cost: item.cost, acquiredAt: new Date().toISOString() }];
+    this.account = {
+      ...this.account,
+      credits: Math.round((this.account.credits - item.cost) * 100) / 100,
+      inventory,
+      updatedAt: new Date().toISOString()
+    };
+    saveAccount(this.account);
+    this.refreshIdleBalances("bar");
+    const event = { type: "barPurchase", message: `${item.name} added to inventory.` };
+    this.ui = { ...this.ui, lastEvent: event };
+    this.emit();
+    return event;
   }
 
   bet(bet) {
@@ -369,6 +434,7 @@ export class Store {
     }
     if (source !== "videoPoker" && this.videoPoker.status !== "dealt") this.videoPoker.bankroll = credits;
     if (source !== "ultimateX" && this.ultimateX.status !== "dealt") this.ultimateX.bankroll = credits;
+    if (source !== "bonusPoker" && this.bonusPoker.status !== "dealt") this.bonusPoker.bankroll = credits;
     if (source !== "blackjack" && this.blackjack.status !== "player") this.blackjack.bankroll = credits;
   }
 

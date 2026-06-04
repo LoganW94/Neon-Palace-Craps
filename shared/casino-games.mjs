@@ -27,6 +27,20 @@ export const DEUCES_WILD_ULTIMATE_X_PAYTABLE = [
   ["Three of a Kind", 1]
 ];
 
+export const BONUS_POKER_PAYTABLE = [
+  ["Royal Flush", 250],
+  ["Straight Flush", 50],
+  ["Four Aces", 80],
+  ["Four 2s, 3s, or 4s", 40],
+  ["Four 5s through Kings", 25],
+  ["Full House", 8],
+  ["Flush", 5],
+  ["Straight", 4],
+  ["Three of a Kind", 3],
+  ["Two Pair", 2],
+  ["Jacks or Better", 1]
+];
+
 export const ULTIMATE_X_MULTIPLIERS = {
   "Natural Royal Flush": 12,
   "Four Deuces": 12,
@@ -72,7 +86,7 @@ export function createUltimateXState(bankroll = 1500) {
     results: [],
     held: [false, false, false, false, false],
     status: "idle",
-    result: "Deuces are wild. Earn multipliers for the next hand.",
+    result: "Deuces are wild. Insert credits and deal.",
     lastPayout: 0,
     handsPlayed: 0,
     bestHand: null,
@@ -80,6 +94,25 @@ export function createUltimateXState(bankroll = 1500) {
     nextMultiplier: 1,
     activeMultipliers: [1],
     nextMultipliers: [1]
+  };
+}
+
+export function createBonusPokerState(bankroll = 1000) {
+  return {
+    bankroll,
+    buyIn: bankroll,
+    wager: 0.25,
+    hands: 1,
+    deck: [],
+    hand: [],
+    finalHands: [],
+    results: [],
+    held: [false, false, false, false, false],
+    status: "idle",
+    result: "Bonus Poker pays extra for premium four of a kinds.",
+    lastPayout: 0,
+    handsPlayed: 0,
+    bestHand: null
   };
 }
 
@@ -97,6 +130,11 @@ export function setUltimateXHands(state, hands) {
     activeMultipliers: normalizeMultipliers(state.activeMultipliers, count, 1),
     nextMultipliers: normalizeMultipliers(state.nextMultipliers, count, 1)
   };
+}
+
+export function setBonusPokerHands(state, hands) {
+  if (state.status === "dealt") return state;
+  return { ...state, hands: clampHands(hands) };
 }
 
 export function dealVideoPoker(state, wager, hands = state.hands) {
@@ -146,6 +184,8 @@ export function drawVideoPoker(state) {
     state: {
       ...state,
       bankroll: cents(state.bankroll + payout),
+      deck: [],
+      hand: finalHands[0] ?? state.hand,
       finalHands,
       results,
       status: "complete",
@@ -158,10 +198,9 @@ export function drawVideoPoker(state) {
   };
 }
 
-export function dealUltimateX(state, wager, hands = state.hands) {
-  if (state.status === "dealt") return { state, event: { type: "rejected", message: "Draw before dealing again." } };
+export function dealBonusPoker(state, wager, hands = state.hands) {
+  if (state.status === "dealt") return { state, event: { type: "rejected", message: "Draw or hold cards before dealing again." } };
   const handCount = clampHands(hands);
-  const nextMultipliers = normalizeMultipliers(state.nextMultipliers, handCount, state.nextMultiplier ?? 1);
   const totalWager = cents(wager * handCount);
   if (wager < 0.01 || totalWager > state.bankroll) return { state, event: { type: "rejected", message: "Choose credits within your bankroll." } };
   const deck = state.deck.length >= 5 ? [...state.deck] : shuffledDeck();
@@ -178,14 +217,75 @@ export function dealUltimateX(state, wager, hands = state.hands) {
       results: [],
       held: [false, false, false, false, false],
       status: "dealt",
-      result: `Multipliers are live. Hold, then draw ${handCount} hand${handCount === 1 ? "" : "s"}.`,
+      result: `Choose holds, then draw ${handCount} hand${handCount === 1 ? "" : "s"}.`,
+      lastPayout: 0
+    },
+    event: { type: "bonusPokerDealt", message: "Bonus Poker. Hold your best draw." }
+  };
+}
+
+export function toggleBonusPokerHold(state, index) {
+  if (state.status !== "dealt") return state;
+  const held = [...state.held];
+  held[index] = !held[index];
+  return { ...state, held };
+}
+
+export function drawBonusPoker(state) {
+  if (state.status !== "dealt") return { state, event: { type: "rejected", message: "Deal a Bonus Poker hand first." } };
+  const finalHands = Array.from({ length: state.hands }, (_, handIndex) => completeDrawHand(state, handIndex));
+  const results = finalHands.map(evaluateBonusPoker);
+  const payout = cents(results.reduce((sum, result) => sum + state.wager * result.multiplier, 0));
+  const bestResult = results.reduce((best, result) => bestPokerHand(best, result), null);
+  const winningHands = results.filter((result) => result.multiplier > 0).length;
+  const resultText = winningHands
+    ? `${winningHands}/${state.hands} hands pay. Best: ${bestResult.name}.`
+    : `No paying hands across ${state.hands}.`;
+  return {
+    state: {
+      ...state,
+      bankroll: cents(state.bankroll + payout),
+      deck: [],
+      hand: finalHands[0] ?? state.hand,
+      finalHands,
+      results,
+      status: "complete",
+      result: resultText,
+      lastPayout: payout,
+      handsPlayed: state.handsPlayed + state.hands,
+      bestHand: bestPokerHand(state.bestHand, bestResult)
+    },
+    event: { type: "bonusPokerDrawn", message: resultText, payout }
+  };
+}
+
+export function dealUltimateX(state, wager, hands = state.hands) {
+  if (state.status === "dealt") return { state, event: { type: "rejected", message: "Draw before dealing again." } };
+  const handCount = clampHands(hands);
+  const totalWager = cents(wager * handCount);
+  if (wager < 0.01 || totalWager > state.bankroll) return { state, event: { type: "rejected", message: "Choose credits within your bankroll." } };
+  const deck = state.deck.length >= 5 ? [...state.deck] : shuffledDeck();
+  const hand = deck.splice(0, 5);
+  return {
+    state: {
+      ...state,
+      bankroll: cents(state.bankroll - totalWager),
+      wager,
+      hands: handCount,
+      deck,
+      hand,
+      finalHands: [],
+      results: [],
+      held: [false, false, false, false, false],
+      status: "dealt",
+      result: `Deuces are wild. Hold, then draw ${handCount} hand${handCount === 1 ? "" : "s"}.`,
       lastPayout: 0,
-      activeMultiplier: nextMultipliers[0] ?? 1,
+      activeMultiplier: 1,
       nextMultiplier: 1,
-      activeMultipliers: nextMultipliers,
+      activeMultipliers: Array.from({ length: handCount }, () => 1),
       nextMultipliers: Array.from({ length: handCount }, () => 1)
     },
-    event: { type: "ultimateXDealt", message: "Deuces Wild Ultimate X. Multiplier is live." }
+    event: { type: "deucesWildDealt", message: "Deuces Wild. Deuces are wild." }
   };
 }
 
@@ -197,22 +297,21 @@ export function toggleUltimateXHold(state, index) {
 }
 
 export function drawUltimateX(state) {
-  if (state.status !== "dealt") return { state, event: { type: "rejected", message: "Deal an Ultimate X hand first." } };
+  if (state.status !== "dealt") return { state, event: { type: "rejected", message: "Deal a Deuces Wild hand first." } };
   const finalHands = Array.from({ length: state.hands }, (_, handIndex) => completeDrawHand(state, handIndex));
   const results = finalHands.map(evaluateDeucesWild);
-  const activeMultipliers = normalizeMultipliers(state.activeMultipliers, state.hands, 1);
-  const nextMultipliers = results.map((result) => ULTIMATE_X_MULTIPLIERS[result.name] ?? 1);
-  const payout = cents(results.reduce((sum, result, index) => sum + state.wager * result.multiplier * activeMultipliers[index], 0));
+  const payout = cents(results.reduce((sum, result) => sum + state.wager * result.multiplier, 0));
   const bestResult = results.reduce((best, result) => bestPokerHand(best, result), null);
   const winningHands = results.filter((result) => result.multiplier > 0).length;
-  const bestNext = Math.max(...nextMultipliers);
   const resultText = winningHands
-    ? `${winningHands}/${state.hands} hands pay. Best: ${bestResult.name}. Top next multiplier ${bestNext}x.`
-    : `No paying hands. Multipliers reset to 1x.`;
+    ? `${winningHands}/${state.hands} hands pay. Best: ${bestResult.name}.`
+    : `No paying hands across ${state.hands}.`;
   return {
     state: {
       ...state,
       bankroll: cents(state.bankroll + payout),
+      deck: [],
+      hand: finalHands[0] ?? state.hand,
       finalHands,
       results,
       status: "complete",
@@ -220,10 +319,12 @@ export function drawUltimateX(state) {
       lastPayout: payout,
       handsPlayed: state.handsPlayed + state.hands,
       bestHand: bestPokerHand(state.bestHand, bestResult),
-      nextMultiplier: nextMultipliers[0] ?? 1,
-      nextMultipliers
+      activeMultiplier: 1,
+      nextMultiplier: 1,
+      activeMultipliers: Array.from({ length: state.hands }, () => 1),
+      nextMultipliers: Array.from({ length: state.hands }, () => 1)
     },
-    event: { type: "ultimateXDrawn", message: resultText, payout, nextMultiplier: nextMultipliers[0] ?? 1 }
+    event: { type: "deucesWildDrawn", message: resultText, payout }
   };
 }
 
@@ -241,6 +342,31 @@ export function evaluateJacksOrBetter(hand) {
   if (groups[0] === 4) return namedPokerResult("Four of a Kind", 25);
   if (groups[0] === 3 && groups[1] === 2) return namedPokerResult("Full House", 9);
   if (isFlush) return namedPokerResult("Flush", 6);
+  if (isStraight) return namedPokerResult("Straight", 4);
+  if (groups[0] === 3) return namedPokerResult("Three of a Kind", 3);
+  if (groups[0] === 2 && groups[1] === 2) return namedPokerResult("Two Pair", 2);
+  const highPair = Object.entries(counts).some(([rank, count]) => count === 2 && ["J", "Q", "K", "A"].includes(rank));
+  if (highPair) return namedPokerResult("Jacks or Better", 1);
+  return namedPokerResult("No Win", 0);
+}
+
+export function evaluateBonusPoker(hand) {
+  const ranks = hand.map((card) => card.rank);
+  const values = ranks.map((rank) => RANK_VALUE[rank]).sort((a, b) => a - b);
+  const counts = countValues(ranks);
+  const groups = Object.values(counts).sort((a, b) => b - a);
+  const isFlush = hand.every((card) => card.suit === hand[0].suit);
+  const isRoyal = isFlush && ["10", "J", "Q", "K", "A"].every((rank) => ranks.includes(rank));
+  const isStraight = unique(values).length === 5 && (values[4] - values[0] === 4 || values.join(",") === "1,2,3,4,5");
+
+  if (isRoyal) return namedPokerResult("Royal Flush", 250);
+  if (isFlush && isStraight) return namedPokerResult("Straight Flush", 50);
+  const fourRank = Object.entries(counts).find(([, count]) => count === 4)?.[0];
+  if (fourRank === "A") return namedPokerResult("Four Aces", 80);
+  if (["2", "3", "4"].includes(fourRank)) return namedPokerResult("Four 2s, 3s, or 4s", 40);
+  if (fourRank) return namedPokerResult("Four 5s through Kings", 25);
+  if (groups[0] === 3 && groups[1] === 2) return namedPokerResult("Full House", 8);
+  if (isFlush) return namedPokerResult("Flush", 5);
   if (isStraight) return namedPokerResult("Straight", 4);
   if (groups[0] === 3) return namedPokerResult("Three of a Kind", 3);
   if (groups[0] === 2 && groups[1] === 2) return namedPokerResult("Two Pair", 2);
@@ -286,7 +412,9 @@ export function createBlackjackState(bankroll = 2000) {
     wins: 0,
     losses: 0,
     pushes: 0,
-    doubled: false
+    doubled: false,
+    splitHands: null,
+    activeHandIndex: 0
   };
 }
 
@@ -296,13 +424,15 @@ export function startBlackjackHand(state, wager) {
   const deck = state.deck.length < 78 ? shuffledDeck(6) : [...state.deck];
   const player = [deck.shift(), deck.shift()];
   const dealer = [deck.shift(), deck.shift()];
-  const next = { ...state, bankroll: state.bankroll - wager, wager, deck, player, dealer, status: "player", message: "Your action.", doubled: false };
+  const next = { ...state, bankroll: state.bankroll - wager, wager, deck, player, dealer, status: "player", message: "Your action.", doubled: false, splitHands: null, activeHandIndex: 0 };
   if (isBlackjack(player) || isBlackjack(dealer)) return settleBlackjack(next);
   return { state: next, event: { type: "blackjackDealt", message: "Blackjack hand dealt." } };
 }
 
 export function blackjackPlayerAction(state, action) {
   if (state.status !== "player") return { state, event: { type: "rejected", message: "Deal a blackjack hand first." } };
+  if (action === "split") return splitBlackjackHand(state);
+  if (state.splitHands) return splitBlackjackAction(state, action);
   if (action === "hit") {
     const deck = [...state.deck];
     const player = [...state.player, deck.shift()];
@@ -324,7 +454,7 @@ export function blackjackGuide(player, dealerUp, canDouble = true) {
   const dealer = blackjackCardValue(dealerUp);
   const value = handValue(player);
   const pairRank = player.length === 2 && player[0].rank === player[1].rank ? player[0].rank : null;
-  if (pairRank === "A" || pairRank === "8") return "Split in a full table game. In this single-hand trainer, hit if aces are not splittable and stand on 16 only against weak dealer cards.";
+  if (pairRank === "A" || pairRank === "8") return "Split. This is usually one of the strongest pair plays.";
   if (pairRank === "10") return "Stand. A made 20 is too valuable to split.";
   if (pairRank === "5" && canDouble && dealer <= 9) return "Double. Pair of 5s plays as hard 10.";
   if (value.soft) {
@@ -364,6 +494,7 @@ export function handValue(hand) {
 }
 
 function settleBlackjack(state) {
+  if (state.splitHands) return settleSplitBlackjack(state);
   let deck = [...state.deck];
   let dealer = [...state.dealer];
   let playerValue = handValue(state.player);
@@ -413,6 +544,144 @@ function settleBlackjack(state) {
       pushes: state.pushes + (outcome === "push" ? 1 : 0)
     },
     event: { type: "blackjackSettled", message, payout, outcome }
+  };
+}
+
+function splitBlackjackHand(state) {
+  if (state.splitHands) return { state, event: { type: "rejected", message: "This hand is already split." } };
+  if (state.player.length !== 2 || state.player[0].rank !== state.player[1].rank) {
+    return { state, event: { type: "rejected", message: "Split is only available on a matching pair." } };
+  }
+  if (state.bankroll < state.wager) {
+    return { state, event: { type: "rejected", message: "Not enough credits to split." } };
+  }
+  const deck = [...state.deck];
+  const splitHands = [
+    { cards: [state.player[0], deck.shift()], wager: state.wager, doubled: false, status: "active", outcome: null, payout: 0, message: "" },
+    { cards: [state.player[1], deck.shift()], wager: state.wager, doubled: false, status: "waiting", outcome: null, payout: 0, message: "" }
+  ];
+  return {
+    state: {
+      ...state,
+      deck,
+      bankroll: state.bankroll - state.wager,
+      player: splitHands[0].cards,
+      splitHands,
+      activeHandIndex: 0,
+      message: "Split. Play hand 1."
+    },
+    event: { type: "blackjackSplit", message: "Split into two hands." }
+  };
+}
+
+function splitBlackjackAction(state, action) {
+  const index = state.activeHandIndex ?? 0;
+  const splitHands = state.splitHands.map((hand) => ({ ...hand, cards: [...hand.cards] }));
+  const hand = splitHands[index];
+  if (!hand || hand.status === "done") return settleSplitBlackjack({ ...state, splitHands });
+  if (action === "hit") {
+    const deck = [...state.deck];
+    hand.cards.push(deck.shift());
+    const value = handValue(hand.cards);
+    if (value.total > 21) {
+      hand.status = "done";
+      hand.outcome = "loss";
+      hand.message = `Hand ${index + 1} busts.`;
+      return advanceSplitHand({ ...state, deck, splitHands }, hand.message);
+    }
+    hand.status = "active";
+    return {
+      state: { ...state, deck, splitHands, player: hand.cards, message: `Hand ${index + 1}.` },
+      event: { type: "blackjackHit", message: "Card." }
+    };
+  }
+  if (action === "double") {
+    if (hand.cards.length !== 2 || state.bankroll < hand.wager) return { state, event: { type: "rejected", message: "Double is only available on the first two cards with enough credits." } };
+    const deck = [...state.deck];
+    hand.cards.push(deck.shift());
+    hand.doubled = true;
+    hand.wager *= 2;
+    hand.status = "done";
+    if (handValue(hand.cards).total > 21) {
+      hand.outcome = "loss";
+      hand.message = `Hand ${index + 1} busts.`;
+    }
+    return advanceSplitHand({ ...state, deck, bankroll: state.bankroll - (hand.wager / 2), splitHands }, hand.message || `Hand ${index + 1} doubles.`);
+  }
+  if (action === "stand") {
+    hand.status = "done";
+    return advanceSplitHand({ ...state, splitHands }, `Hand ${index + 1} stands.`);
+  }
+  return { state, event: { type: "rejected", message: "Unknown blackjack action." } };
+}
+
+function advanceSplitHand(state, message) {
+  const nextIndex = state.splitHands.findIndex((hand) => hand.status !== "done");
+  if (nextIndex === -1) return settleSplitBlackjack({ ...state, message });
+  const splitHands = state.splitHands.map((hand, index) => ({ ...hand, status: index === nextIndex ? "active" : hand.status }));
+  return {
+    state: { ...state, splitHands, activeHandIndex: nextIndex, player: splitHands[nextIndex].cards, message: `${message} Play hand ${nextIndex + 1}.` },
+    event: { type: "blackjackAdvance", message: `${message} Play hand ${nextIndex + 1}.` }
+  };
+}
+
+function settleSplitBlackjack(state) {
+  let deck = [...state.deck];
+  let dealer = [...state.dealer];
+  let dealerValue = handValue(dealer);
+  const liveHand = state.splitHands.some((hand) => handValue(hand.cards).total <= 21);
+  if (liveHand) {
+    while (dealerValue.total < 17) {
+      dealer.push(deck.shift());
+      dealerValue = handValue(dealer);
+    }
+  }
+  let bankroll = state.bankroll;
+  let wins = 0;
+  let losses = 0;
+  let pushes = 0;
+  const settledHands = state.splitHands.map((hand, index) => {
+    const value = handValue(hand.cards);
+    let outcome = hand.outcome ?? "loss";
+    let payout = 0;
+    let message = hand.message || `Hand ${index + 1}: dealer wins.`;
+    if (value.total > 21) {
+      outcome = "loss";
+      message = `Hand ${index + 1}: bust.`;
+    } else if (dealerValue.total > 21 || value.total > dealerValue.total) {
+      payout = hand.wager * 2;
+      outcome = "win";
+      message = `Hand ${index + 1}: wins.`;
+    } else if (value.total === dealerValue.total) {
+      payout = hand.wager;
+      outcome = "push";
+      message = `Hand ${index + 1}: push.`;
+    }
+    bankroll += payout;
+    wins += outcome === "win" ? 1 : 0;
+    losses += outcome === "loss" ? 1 : 0;
+    pushes += outcome === "push" ? 1 : 0;
+    return { ...hand, status: "done", outcome, payout, message };
+  });
+  const message = settledHands.map((hand) => hand.message).join(" ");
+  const outcome = wins > 0 ? "win" : pushes > 0 && losses === 0 ? "push" : "loss";
+  return {
+    state: {
+      ...state,
+      deck,
+      dealer,
+      bankroll,
+      player: settledHands[state.activeHandIndex ?? 0]?.cards ?? state.player,
+      splitHands: settledHands,
+      status: "complete",
+      message,
+      lastOutcome: outcome,
+      handsPlayed: state.handsPlayed + settledHands.length,
+      wins: state.wins + wins,
+      losses: state.losses + losses,
+      pushes: state.pushes + pushes
+    },
+    event: { type: "blackjackSettled", message, payout: settledHands.reduce((sum, hand) => sum + hand.payout, 0), outcome }
   };
 }
 

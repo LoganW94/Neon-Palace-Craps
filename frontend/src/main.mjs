@@ -51,7 +51,7 @@ document.addEventListener("click", (event) => {
     return;
   }
   if (target.dataset.page) {
-    const gatedPages = ["table", "pokerSelect", "videoPoker", "ultimateX", "blackjack", "bar"];
+    const gatedPages = ["table", "pokerSelect", "videoPoker", "ultimateX", "bonusPoker", "blackjack", "bar"];
     if (!snapshot.account && gatedPages.includes(target.dataset.page)) {
       store.setUi({ page: "account" });
       announce("Create an account first.");
@@ -73,6 +73,12 @@ document.addEventListener("click", (event) => {
       store.resetAccount();
       announce("Account reset.");
     }
+    return;
+  }
+  if (target.dataset.barItem) {
+    const barEvent = store.buyBarItem(target.dataset.barItem);
+    if (barEvent.type !== "rejected") sound.chips();
+    announce(barEvent.message);
     return;
   }
   if (target.dataset.newGame) {
@@ -99,6 +105,14 @@ document.addEventListener("click", (event) => {
     }
     store.newUltimateX();
   }
+  if (target.hasAttribute("data-new-bonus-poker")) {
+    if (!snapshot.account) {
+      store.setUi({ page: "account" });
+      announce("Create an account first.");
+      return;
+    }
+    store.newBonusPoker();
+  }
   if (target.hasAttribute("data-new-blackjack")) {
     if (!snapshot.account) {
       store.setUi({ page: "account" });
@@ -107,37 +121,41 @@ document.addEventListener("click", (event) => {
     }
     store.newBlackjack();
   }
-  if (target.hasAttribute("data-poker-deal")) {
-    const pokerEvent = store.videoPokerDeal();
-    if (pokerEvent.type !== "rejected") sound.deal();
+  if (target.dataset.videoPokerAction) {
+    const pokerEvent = target.dataset.videoPokerAction === "draw" ? store.videoPokerDraw() : store.videoPokerDeal();
+    if (pokerEvent.type !== "rejected") target.dataset.videoPokerAction === "draw" ? sound.draw() : sound.deal();
+    if (target.dataset.videoPokerAction === "draw" && pokerEvent.payout > 0) sound.win(pokerEvent.payout > 500);
+    if (target.dataset.videoPokerAction === "draw" && pokerEvent.payout === 0) sound.loss();
     announce(pokerEvent.message);
+    return;
   }
   if (target.hasAttribute("data-poker-hold")) {
     store.videoPokerHold(Number(target.dataset.pokerHold));
     sound.cardTap();
   }
-  if (target.hasAttribute("data-poker-draw")) {
-    const pokerEvent = store.videoPokerDraw();
-    if (pokerEvent.type !== "rejected") sound.draw();
-    if (pokerEvent.payout > 0) sound.win(pokerEvent.payout > 500);
-    if (pokerEvent.payout === 0) sound.loss();
+  if (target.dataset.deucesWildAction) {
+    const pokerEvent = target.dataset.deucesWildAction === "draw" ? store.ultimateXDraw() : store.ultimateXDeal();
+    if (pokerEvent.type !== "rejected") target.dataset.deucesWildAction === "draw" ? sound.draw() : sound.deal();
+    if (target.dataset.deucesWildAction === "draw" && pokerEvent.payout > 0) sound.win(pokerEvent.payout > 500);
+    if (target.dataset.deucesWildAction === "draw" && pokerEvent.payout === 0) sound.loss();
     announce(pokerEvent.message);
-  }
-  if (target.hasAttribute("data-ultimate-x-deal")) {
-    const pokerEvent = store.ultimateXDeal();
-    if (pokerEvent.type !== "rejected") sound.deal();
-    announce(pokerEvent.message);
+    return;
   }
   if (target.hasAttribute("data-ultimate-x-hold")) {
     store.ultimateXHold(Number(target.dataset.ultimateXHold));
     sound.cardTap();
   }
-  if (target.hasAttribute("data-ultimate-x-draw")) {
-    const pokerEvent = store.ultimateXDraw();
-    if (pokerEvent.type !== "rejected") sound.draw();
-    if (pokerEvent.payout > 0) sound.win(pokerEvent.payout > 500);
-    if (pokerEvent.payout === 0) sound.loss();
+  if (target.dataset.bonusPokerAction) {
+    const pokerEvent = target.dataset.bonusPokerAction === "draw" ? store.bonusPokerDraw() : store.bonusPokerDeal();
+    if (pokerEvent.type !== "rejected") target.dataset.bonusPokerAction === "draw" ? sound.draw() : sound.deal();
+    if (target.dataset.bonusPokerAction === "draw" && pokerEvent.payout > 0) sound.win(pokerEvent.payout > 500);
+    if (target.dataset.bonusPokerAction === "draw" && pokerEvent.payout === 0) sound.loss();
     announce(pokerEvent.message);
+    return;
+  }
+  if (target.hasAttribute("data-bonus-poker-hold")) {
+    store.bonusPokerHold(Number(target.dataset.bonusPokerHold));
+    sound.cardTap();
   }
   if (target.hasAttribute("data-blackjack-deal")) {
     const blackjackEvent = store.blackjackDeal();
@@ -209,6 +227,7 @@ document.addEventListener("change", (event) => {
   }
   if (target.matches("[data-video-poker-hands]")) store.videoPokerHands(Number(target.value));
   if (target.matches("[data-ultimate-x-hands]")) store.ultimateXHands(Number(target.value));
+  if (target.matches("[data-bonus-poker-hands]")) store.bonusPokerHands(Number(target.value));
   if (target.matches("[data-check]")) store.setUi({ [target.dataset.check]: target.checked });
   if (target.matches("[data-sound]")) {
     sound.toggleSound(target.checked);
